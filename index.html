@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="面向 PConline 编辑场景的在线封面裁切工具，支持官网预设、画质控制、目标文件大小和批量导出。">
+  <title>PConline 封面快裁</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23087fc1'/%3E%3Cstop offset='1' stop-color='%2300d6c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='44' height='44' rx='14' fill='url(%23g)'/%3E%3Cpath d='M14 11h-2a3 3 0 0 0-3 3v7m30 6v7a3 3 0 0 1-3 3h-7' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3Crect x='14' y='14' width='25' height='21' rx='6' fill='white' fill-opacity='.17' stroke='white' stroke-opacity='.55'/%3E%3Ccircle cx='31' cy='21' r='2.6' fill='%238dfff4'/%3E%3Cpath d='m17 31 6-7 5 5 3-3 5 5' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef3f7;
+      --panel: rgba(255, 255, 255, .94);
+      --ink: #14222d;
+      --muted: #647481;
+      --line: #dce5eb;
+      --brand: #00aee9;
+      --brand-deep: #087fc1;
+      --accent: #00d6c7;
+      --danger: #d64553;
+      --shadow: 0 18px 50px rgba(28, 55, 72, .11);
+      --radius: 18px;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(0, 174, 233, .15), transparent 28rem),
+        radial-gradient(circle at 90% 8%, rgba(0, 214, 199, .11), transparent 25rem),
+        var(--bg);
+      color: var(--ink);
+    }
+
+    button, input, select { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(0, 174, 233, .26);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 0 26px;
+      color: #fff;
+      background: linear-gradient(115deg, #087fc1 0%, #00aee9 52%, #00cdbf 100%);
+      box-shadow: 0 8px 24px rgba(0, 126, 191, .19);
+    }
+
+    .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .brand-mark {
+      width: 48px; height: 48px; flex: 0 0 48px;
+      display: grid; place-items: center;
+      filter: drop-shadow(0 8px 14px rgba(0, 72, 120, .24));
+      transition: transform .22s ease, filter .22s ease;
+    }
+    .brand:hover .brand-mark { transform: translateY(-2px) rotate(-2deg); filter: drop-shadow(0 11px 18px rgba(0, 72, 120, .3)); }
+    .brand-logo { width: 48px; height: 48px; display: block; overflow: visible; }
+    .brand-logo .logo-glow { transform-origin: 24px 24px; transition: transform .28s ease; }
+    .brand:hover .brand-logo .logo-glow { transform: scale(1.035); }
+    .brand h1 { margin: 0; font-size: 20px; line-height: 1.1; }
+    .brand p { margin: 4px 0 0; font-size: 12px; opacity: .8; }
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .privacy-pill, .ghost-light {
+      border: 1px solid rgba(255, 255, 255, .32);
+      background: rgba(255, 255, 255, .13);
+      color: #fff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    .ghost-light { cursor: pointer; }
+    .ghost-light:hover { background: rgba(255, 255, 255, .23); }
+
+    .app {
+      min-height: calc(100vh - 72px);
+      display: grid;
+      grid-template-columns: 250px minmax(420px, 1fr) 318px;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .panel {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, .8);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .left-panel, .right-panel {
+      height: calc(100vh - 100px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-head { padding: 18px 18px 12px; }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--brand-deep);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .panel h2 { margin: 0; font-size: 16px; }
+    .subtle { color: var(--muted); font-size: 12px; }
+
+    .add-zone {
+      margin: 0 14px 12px;
+      border: 1.5px dashed #a9cad9;
+      border-radius: 14px;
+      padding: 15px 12px;
+      text-align: center;
+      cursor: pointer;
+      background: linear-gradient(145deg, rgba(0, 174, 233, .055), rgba(0, 214, 199, .045));
+      transition: .18s ease;
+    }
+    .add-zone:hover, body.dragging .add-zone {
+      border-color: var(--brand);
+      background: rgba(0, 174, 233, .1);
+      transform: translateY(-1px);
+    }
+    .add-zone strong { display: block; font-size: 13px; }
+    .add-zone span { display: block; color: var(--muted); font-size: 11px; margin-top: 5px; }
+
+    .asset-list {
+      overflow: auto;
+      padding: 0 9px 14px;
+      scrollbar-width: thin;
+    }
+    .asset-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 30px;
+      gap: 4px;
+      margin: 4px 0;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+    }
+    .asset-row.active { background: #eefaff; border-color: #bfe9f7; }
+    .asset-main {
+      min-width: 0; border: 0; background: transparent; padding: 3px;
+      display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 9px;
+      align-items: center; text-align: left; cursor: pointer;
+    }
+    .asset-main img {
+      width: 54px; height: 42px; object-fit: cover; border-radius: 8px;
+      background: #dfe8ed;
+    }
+    .asset-name { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .asset-meta { margin-top: 4px; color: var(--muted); font-size: 10px; }
+    .remove-btn {
+      width: 28px; height: 28px; align-self: center; border: 0; border-radius: 8px;
+      color: #83919a; background: transparent; cursor: pointer;
+    }
+    .remove-btn:hover { color: var(--danger); background: #fff0f1; }
+
+    .workspace {
+      position: relative;
+      height: calc(100vh - 100px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #16242e;
+      border-color: #223742;
+    }
+    .workspace-head {
+      min-height: 58px;
+      padding: 11px 15px;
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      color: #dce9ef;
+      border-bottom: 1px solid rgba(255, 255, 255, .08);
+    }
+    .file-title { min-width: 0; }
+    .file-title strong { display: block; font-size: 13px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .file-title span { display: block; color: #8fa6b3; font-size: 10px; margin-top: 3px; }
+    .toolbar { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .tool-btn {
+      width: 36px; height: 36px; padding: 0;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 9px; background: rgba(255,255,255,.055); color: #dce9ef;
+      cursor: pointer; display: grid; place-items: center;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+      transition: transform .16s ease, background .16s ease, border-color .16s ease;
+    }
+    .tool-btn:hover { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.22); transform: translateY(-1px); }
+    .tool-btn.active { color: #5ef1df; border-color: rgba(94, 241, 223, .42); }
+    .tool-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    .stage-area {
+      flex: 1;
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      background:
+        linear-gradient(45deg, rgba(255,255,255,.022) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.022) 75%),
+        linear-gradient(45deg, rgba(255,255,255,.022) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.022) 75%);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+    }
+    .stage-shell {
+      --ratio: 1.777;
+      position: relative;
+      width: min(100%, calc((100vh - 245px) * var(--ratio)));
+      max-height: calc(100vh - 245px);
+      aspect-ratio: var(--ratio);
+      overflow: hidden;
+      border-radius: 4px;
+      background: #0b1115;
+      box-shadow: 0 24px 60px rgba(0,0,0,.36);
+      touch-action: none;
+      user-select: none;
+    }
+    #cropCanvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #cropCanvas.dragging { cursor: grabbing; }
+    .grid-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: .15s; }
+    .grid-overlay.show { opacity: .85; }
+    .grid-overlay::before, .grid-overlay::after {
+      content: ""; position: absolute; inset: 0;
+    }
+    .grid-overlay::before {
+      background: linear-gradient(to right, transparent 33.15%, rgba(255,255,255,.7) 33.25%, rgba(255,255,255,.7) 33.5%, transparent 33.6%, transparent 66.45%, rgba(255,255,255,.7) 66.55%, rgba(255,255,255,.7) 66.8%, transparent 66.9%);
+    }
+    .grid-overlay::after {
+      background: linear-gradient(to bottom, transparent 33.15%, rgba(255,255,255,.7) 33.25%, rgba(255,255,255,.7) 33.5%, transparent 33.6%, transparent 66.45%, rgba(255,255,255,.7) 66.55%, rgba(255,255,255,.7) 66.8%, transparent 66.9%);
+    }
+    .safe-box {
+      position: absolute; inset: 7%; pointer-events: none;
+      border: 1px dashed rgba(255,255,255,.66); border-radius: 2px;
+      opacity: 0; transition: .15s;
+    }
+    .safe-box.show { opacity: 1; }
+
+    .empty-state {
+      position: absolute; inset: 58px 0 0;
+      z-index: 3;
+      display: grid; place-items: center;
+      padding: 30px; text-align: center;
+      background: #16242e;
+    }
+    .empty-state.hidden { display: none; }
+    .empty-card { max-width: 390px; }
+    .empty-icon {
+      width: 74px; height: 74px; margin: 0 auto 18px;
+      display: grid; place-items: center; border-radius: 22px;
+      color: #4fe9dc; font-size: 30px;
+      background: rgba(0,214,199,.08); border: 1px solid rgba(79,233,220,.2);
+    }
+    .empty-card h3 { color: #f3f8fa; font-size: 20px; margin: 0; }
+    .empty-card p { color: #91a8b4; font-size: 13px; line-height: 1.7; }
+    .primary {
+      border: 0; border-radius: 10px; padding: 11px 16px;
+      color: #fff; font-weight: 700; cursor: pointer;
+      background: linear-gradient(115deg, var(--brand-deep), var(--brand));
+      box-shadow: 0 8px 18px rgba(0, 174, 233, .2);
+    }
+    .primary:hover { filter: brightness(1.04); transform: translateY(-1px); }
+
+    .workspace-foot {
+      min-height: 64px; padding: 10px 15px;
+      display: grid; grid-template-columns: auto minmax(140px, 1fr) auto; gap: 12px;
+      align-items: center; border-top: 1px solid rgba(255,255,255,.08); color: #c6d5dc;
+    }
+    .zoom-label { font-size: 11px; color: #8fa6b3; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    .zoom-number { font-variant-numeric: tabular-nums; font-size: 12px; min-width: 44px; text-align: right; }
+
+    .right-scroll { overflow: auto; padding: 0 14px 18px; scrollbar-width: thin; }
+    .section { padding: 15px 3px; border-top: 1px solid var(--line); }
+    .section:first-child { border-top: 0; padding-top: 4px; }
+    .section-title { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .section-title h3 { margin: 0; font-size: 13px; }
+    .section-title span { color: var(--muted); font-size: 10px; }
+    .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .preset {
+      min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 11px;
+      background: #fff; text-align: left; cursor: pointer;
+    }
+    .preset:hover { border-color: #9edced; background: #f5fcff; }
+    .preset.active { border-color: var(--brand); background: #eafaff; box-shadow: 0 0 0 2px rgba(0,174,233,.1); }
+    .preset strong { display: block; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .preset span { display: block; color: var(--muted); font-size: 10px; margin-top: 4px; }
+    .ratio-tag { color: var(--brand-deep) !important; font-weight: 700; }
+
+    .custom-row { display: grid; grid-template-columns: 1fr 14px 1fr; gap: 7px; align-items: center; margin-top: 9px; }
+    .field, select {
+      min-width: 0; width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 9px;
+      padding: 0 10px; background: #fff; color: var(--ink);
+    }
+    .custom-x { text-align: center; color: var(--muted); }
+    .small-secondary {
+      width: 100%; margin-top: 7px; border: 1px solid #a8dcea; border-radius: 9px;
+      padding: 8px; background: #f2fbfe; color: var(--brand-deep); cursor: pointer; font-weight: 700; font-size: 11px;
+    }
+
+    .toggle-row { display: flex; gap: 7px; }
+    .toggle {
+      flex: 1; border: 1px solid var(--line); border-radius: 9px; padding: 8px;
+      background: #fff; cursor: pointer; font-size: 11px;
+    }
+    .toggle.active { border-color: var(--brand); color: var(--brand-deep); background: #eafaff; }
+    .export-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .label { display: block; color: var(--muted); font-size: 10px; margin-bottom: 5px; }
+    .quality-wrap { margin-top: 10px; }
+    .quality-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
+    .size-limit {
+      display: grid; grid-template-columns: auto 86px auto; gap: 7px; align-items: center;
+      margin-top: 10px; padding: 9px 10px; border-radius: 10px;
+      background: #f7fafb; border: 1px solid var(--line); font-size: 10px;
+    }
+    .size-limit label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .size-limit input[type="checkbox"] { accent-color: var(--brand); }
+    .size-limit .field { height: 32px; padding: 0 8px; }
+    .limit-hint { margin: 6px 2px 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+    .output-card {
+      display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center;
+      padding: 11px; border-radius: 11px; background: #f4f8fa; border: 1px solid #e5edf1;
+      margin: 11px 0;
+    }
+    .output-card strong { font-size: 13px; }
+    .output-card span { display: block; color: var(--muted); font-size: 10px; margin-top: 3px; }
+    .size-badge { color: var(--brand-deep); font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .export-stack { display: grid; gap: 7px; }
+    .secondary {
+      border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+      background: #fff; cursor: pointer; font-size: 11px; font-weight: 700;
+    }
+    .secondary:hover { background: #f5fbfd; border-color: #b2dce8; }
+    .primary:disabled, .secondary:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .tips { margin: 0; padding-left: 16px; color: var(--muted); font-size: 10px; line-height: 1.8; }
+    kbd { padding: 1px 5px; border: 1px solid #ccd7de; border-bottom-width: 2px; border-radius: 4px; background: #fff; color: #53636d; font-size: 9px; }
+
+    dialog {
+      width: min(680px, calc(100vw - 32px));
+      border: 0; border-radius: 20px; padding: 0; color: var(--ink);
+      box-shadow: 0 30px 100px rgba(10, 37, 54, .34);
+    }
+    dialog::backdrop { background: rgba(13, 30, 40, .58); backdrop-filter: blur(4px); }
+    .dialog-head { padding: 21px 23px 14px; display: flex; justify-content: space-between; align-items: start; }
+    .dialog-head h2 { margin: 0; font-size: 18px; }
+    .dialog-head p { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
+    .icon-close { border: 0; background: #eef3f5; border-radius: 9px; width: 32px; height: 32px; cursor: pointer; }
+    .audit-table { width: calc(100% - 46px); margin: 0 23px 20px; border-collapse: collapse; font-size: 11px; }
+    .audit-table th, .audit-table td { padding: 10px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+    .audit-table th { color: var(--muted); font-weight: 600; }
+    .audit-note { margin: 0 23px 22px; padding: 12px; border-radius: 10px; background: #eefaff; color: #356779; font-size: 11px; line-height: 1.6; }
+
+    .toast {
+      position: fixed; z-index: 20; left: 50%; bottom: 24px;
+      transform: translate(-50%, 20px); opacity: 0; pointer-events: none;
+      max-width: min(520px, calc(100vw - 30px));
+      padding: 11px 16px; border-radius: 11px;
+      color: #fff; background: #102b38; box-shadow: 0 14px 36px rgba(0,0,0,.24);
+      font-size: 12px; transition: .22s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.error { background: #9d303d; }
+
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 220px minmax(420px, 1fr); }
+      .right-panel { position: fixed; z-index: 8; right: 14px; top: 86px; width: 318px; transform: translateX(350px); transition: .22s; }
+      body.settings-open .right-panel { transform: translateX(0); }
+      .mobile-settings { display: inline-block !important; }
+    }
+    @media (max-width: 760px) {
+      .topbar { padding: 0 14px; }
+      .brand p, .privacy-pill { display: none; }
+      .app { display: block; padding: 8px; }
+      .left-panel { display: none; }
+      .workspace { height: calc(100vh - 88px); }
+      .stage-area { padding: 10px; }
+      .stage-shell { max-height: calc(100vh - 245px); width: min(100%, calc((100vh - 245px) * var(--ratio))); }
+      .workspace-foot { grid-template-columns: auto 1fr auto; }
+      .right-panel { top: 80px; right: 8px; height: calc(100vh - 88px); max-width: calc(100vw - 16px); }
+    }
+    .mobile-settings { display: none; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg class="brand-logo" viewBox="0 0 48 48">
+          <defs>
+            <linearGradient id="brandMarkBg" x1="5" y1="4" x2="43" y2="45" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#0b72bb"/>
+              <stop offset=".52" stop-color="#00aee9"/>
+              <stop offset="1" stop-color="#00d6b5"/>
+            </linearGradient>
+            <linearGradient id="brandMarkShine" x1="16" y1="12" x2="35" y2="36" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#fff" stop-opacity=".28"/>
+              <stop offset="1" stop-color="#fff" stop-opacity=".05"/>
+            </linearGradient>
+          </defs>
+          <g class="logo-glow">
+            <rect x="1.5" y="1.5" width="45" height="45" rx="14.5" fill="url(#brandMarkBg)" stroke="#fff" stroke-opacity=".65"/>
+            <rect x="5" y="5" width="38" height="38" rx="11" fill="url(#brandMarkShine)"/>
+            <path d="M15 10h-3.2A3.8 3.8 0 0 0 8 13.8V21M40 27v7.2a3.8 3.8 0 0 1-3.8 3.8H29" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="13" y="13" width="27" height="23" rx="7" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".52"/>
+            <circle cx="31.5" cy="20.5" r="2.8" fill="#93fff4"/>
+            <path d="m16.5 31.5 6.1-7.2 5.1 5.2 3.4-3.5 5.4 5.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <h1>PConline 封面快裁</h1>
+        <p>首页实测规格 · 拖拽构图 · 原像素导出</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="privacy-pill">● 纯本地处理，图片不上传</span>
+      <button class="ghost-light" id="auditBtn">规格依据</button>
+      <button class="ghost-light mobile-settings" id="settingsBtn">导出设置</button>
+    </div>
+  </header>
+
+  <main class="app">
+    <aside class="panel left-panel">
+      <div class="panel-head">
+        <p class="eyebrow">Images</p>
+        <h2>图片队列 <span class="subtle" id="queueCount">0</span></h2>
+      </div>
+      <div class="add-zone" id="addZone" role="button" tabindex="0">
+        <strong>＋ 添加图片</strong>
+        <span>可多选、拖入或直接粘贴</span>
+      </div>
+      <div class="asset-list" id="assetList"></div>
+    </aside>
+
+    <section class="panel workspace">
+      <div class="workspace-head">
+        <div class="file-title">
+          <strong id="currentName">尚未选择图片</strong>
+          <span id="currentMeta">支持 JPG / PNG / WebP / GIF 静态帧</span>
+        </div>
+        <div class="toolbar">
+          <button class="tool-btn" id="rotateLeft" title="向左旋转（R）" aria-label="向左旋转"><svg viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l4.2 4.2a7 7 0 1 1-1.7 7.1"/></svg><span class="sr-only">向左旋转</span></button>
+          <button class="tool-btn" id="rotateRight" title="向右旋转（Shift+R）" aria-label="向右旋转"><svg viewBox="0 0 24 24"><path d="M20 8V4m0 0h-4m4-0-4.2 4.2a7 7 0 1 0 1.7 7.1"/></svg><span class="sr-only">向右旋转</span></button>
+          <button class="tool-btn" id="flipX" title="水平翻转" aria-label="水平翻转"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 8l-3 4 3 4m16-8 3 4-3 4M1 12h7m8 0h7"/></svg><span class="sr-only">水平翻转</span></button>
+          <button class="tool-btn" id="gridBtn" title="三分线" aria-label="三分线"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18m6-18v18M3 9h18M3 15h18"/></svg><span class="sr-only">三分线</span></button>
+          <button class="tool-btn" id="safeBtn" title="安全区" aria-label="安全区"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg><span class="sr-only">安全区</span></button>
+          <button class="tool-btn" id="resetBtn" title="重置并居中" aria-label="重置并居中"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg><span class="sr-only">重置并居中</span></button>
+        </div>
+      </div>
+
+      <div class="stage-area">
+        <div class="stage-shell" id="stageShell">
+          <canvas id="cropCanvas" aria-label="图片裁切预览"></canvas>
+          <div class="grid-overlay" id="gridOverlay"></div>
+          <div class="safe-box" id="safeBox"></div>
+        </div>
+      </div>
+
+      <div class="workspace-foot">
+        <span class="zoom-label">缩放</span>
+        <input id="zoomRange" type="range" min="100" max="400" value="100" step="1" aria-label="图片缩放">
+        <span class="zoom-number" id="zoomNumber">100%</span>
+      </div>
+
+      <div class="empty-state" id="emptyState">
+        <div class="empty-card">
+          <div class="empty-icon">▧</div>
+          <h3>把原图拖进来，立刻开始裁切</h3>
+          <p>已内置 PConline 首页焦点、资讯卡片、视频与专题位规格。所有处理都在当前浏览器完成。</p>
+          <button class="primary" id="emptyAddBtn">选择图片</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel right-panel">
+      <div class="panel-head">
+        <p class="eyebrow">Crop & Export</p>
+        <h2>规格与导出</h2>
+      </div>
+      <div class="right-scroll">
+        <section class="section">
+          <div class="section-title">
+            <h3>官网规格</h3>
+            <span>2026-08-01 首页实测</span>
+          </div>
+          <div class="preset-grid" id="presetGrid"></div>
+          <div class="custom-row">
+            <input class="field" id="customW" type="number" min="32" max="8000" value="1200" aria-label="自定义宽度">
+            <span class="custom-x">×</span>
+            <input class="field" id="customH" type="number" min="32" max="8000" value="675" aria-label="自定义高度">
+          </div>
+          <button class="small-secondary" id="applyCustom">应用自定义尺寸</button>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h3>辅助构图</h3>
+            <span>仅预览，不会导出</span>
+          </div>
+          <div class="toggle-row">
+            <button class="toggle" id="gridToggle">三分线</button>
+            <button class="toggle" id="safeToggle">7% 安全区</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h3>导出设置</h3>
+            <span>按目标像素生成</span>
+          </div>
+          <div class="export-settings">
+            <label>
+              <span class="label">格式</span>
+              <select id="formatSelect">
+                <option value="image/jpeg">JPG</option>
+                <option value="image/webp">WebP</option>
+                <option value="image/png">PNG</option>
+              </select>
+            </label>
+            <label>
+              <span class="label">文件名后缀</span>
+              <select id="suffixSelect">
+                <option value="size">尺寸</option>
+                <option value="slot">版位名</option>
+                <option value="both">版位名+尺寸</option>
+              </select>
+            </label>
+          </div>
+          <div class="quality-wrap" id="qualityWrap">
+            <div class="quality-head"><span>画质</span><strong id="qualityNumber">92%</strong></div>
+            <input id="qualityRange" type="range" min="60" max="100" value="92" step="1">
+          </div>
+          <div class="size-limit">
+            <label><input id="limitEnabled" type="checkbox"> 限制大小</label>
+            <input class="field" id="maxKb" type="number" min="20" max="10240" step="10" value="500" aria-label="最大文件大小 KB">
+            <span>KB</span>
+          </div>
+          <p class="limit-hint" id="limitHint">开启后自动寻找合适画质，像素尺寸保持不变。</p>
+
+          <div class="output-card">
+            <div>
+              <strong id="outputName">首页主焦点</strong>
+              <span id="outputRatio">约 2.14:1</span>
+            </div>
+            <div class="size-badge" id="outputSize">696 × 325</div>
+          </div>
+
+          <div class="export-stack">
+            <button class="primary" id="downloadCurrent" disabled>下载当前裁图</button>
+            <button class="secondary" id="downloadPresetZip" disabled>当前图片 · 全部官网规格 ZIP</button>
+            <button class="secondary" id="downloadQueueZip" disabled>全部图片 · 当前规格 ZIP</button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title"><h3>快捷操作</h3></div>
+          <ul class="tips">
+            <li>拖动画面改变构图，滚轮或滑杆缩放</li>
+            <li><kbd>方向键</kbd> 微调，<kbd>Shift</kbd> + 方向键移动 10 像素</li>
+            <li><kbd>R</kbd> 旋转，<kbd>Ctrl</kbd> + <kbd>S</kbd> 导出当前图</li>
+            <li>同一图片切换规格时，会分别记住每个构图</li>
+          </ul>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <input id="fileInput" type="file" accept="image/*" multiple hidden>
+
+  <dialog id="auditDialog">
+    <div class="dialog-head">
+      <div>
+        <h2>官网封面规格依据</h2>
+        <p>来自太平洋科技首页可见图片的原图、HTML 尺寸与实际渲染尺寸交叉检查</p>
+      </div>
+      <button class="icon-close" id="closeAudit" aria-label="关闭">×</button>
+    </div>
+    <table class="audit-table">
+      <thead><tr><th>版位</th><th>页面尺寸 / 原图</th><th>比例</th><th>工具预设</th></tr></thead>
+      <tbody>
+        <tr><td>首页主焦点</td><td>696 × 325</td><td>约 2.14:1</td><td>696 × 325</td></tr>
+        <tr><td>焦点右侧双图</td><td>406 × 189</td><td>约 2.15:1</td><td>406 × 189</td></tr>
+        <tr><td>频道资讯卡片</td><td>CMS 实际请求 400 × 300</td><td>4:3</td><td>400 × 300</td></tr>
+        <tr><td>频道首图 / 列表图</td><td>315 × 236 / 210 × 157</td><td>约 4:3</td><td>保留精确像素</td></tr>
+        <tr><td>视频 / 专题缩略</td><td>315 × 177 / 256 × 144</td><td>约 16:9</td><td>保留精确像素</td></tr>
+      </tbody>
+    </table>
+    <p class="audit-note">广告横幅、Logo、二维码和商品方图未计入“新闻封面”。页面本身使用 <code>object-fit: cover</code>，所以本工具默认采用铺满裁切，并允许每个版位单独微调主体位置。</p>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const PRESETS = [
+        { id: 'focus-main', name: '首页主焦点', w: 696, h: 325, ratio: '约 2.14:1' },
+        { id: 'focus-side', name: '焦点双图', w: 406, h: 189, ratio: '约 2.15:1' },
+        { id: 'card-cms', name: '资讯卡片', w: 400, h: 300, ratio: '4:3' },
+        { id: 'channel-lead', name: '频道首图', w: 315, h: 236, ratio: '约 4:3' },
+        { id: 'list-thumb', name: '列表小图', w: 210, h: 157, ratio: '约 4:3' },
+        { id: 'video-wide', name: '视频横图', w: 315, h: 177, ratio: '约 16:9' },
+        { id: 'topic-thumb', name: '专题缩略', w: 256, h: 144, ratio: '16:9' }
+      ];
+
+      const $ = (id) => document.getElementById(id);
+      const canvas = $('cropCanvas');
+      const ctx = canvas.getContext('2d', { alpha: false });
+      const fileInput = $('fileInput');
+      let items = [];
+      let activeIndex = -1;
+      let activePreset = PRESETS[0];
+      let customSerial = 0;
+      let pointer = null;
+      let busy = false;
+      let toastTimer = 0;
+
+      const saved = (() => {
+        try { return JSON.parse(localStorage.getItem('pconline-cropper-settings') || '{}'); }
+        catch { return {}; }
+      })();
+
+      if (saved.format) $('formatSelect').value = saved.format;
+      if (saved.quality) $('qualityRange').value = saved.quality;
+      if (saved.suffix) $('suffixSelect').value = saved.suffix;
+      if (saved.limit) $('limitEnabled').checked = true;
+      if (saved.maxKb) $('maxKb').value = saved.maxKb;
+
+      function persistSettings() {
+        try {
+          localStorage.setItem('pconline-cropper-settings', JSON.stringify({
+            format: $('formatSelect').value,
+            quality: $('qualityRange').value,
+            suffix: $('suffixSelect').value,
+            limit: $('limitEnabled').checked,
+            maxKb: $('maxKb').value
+          }));
+        } catch {}
+      }
+
+      function ratioText(w, h) {
+        return (w / h).toFixed(2).replace(/\.00$/, '') + ':1';
+      }
+
+      function presetKey(p) { return `${p.id}-${p.w}x${p.h}`; }
+
+      function cropFor(item, preset = activePreset) {
+        const key = presetKey(preset);
+        if (!item.crops.has(key)) {
+          item.crops.set(key, { zoom: 1, x: 0, y: 0, rotation: 0, flipX: false, flipY: false });
+        }
+        return item.crops.get(key);
+      }
+
+      function currentItem() { return items[activeIndex] || null; }
+
+      function clampCrop(item, preset, crop) {
+        const quarterTurns = ((crop.rotation % 360) + 360) % 360;
+        const swapped = quarterTurns === 90 || quarterTurns === 270;
+        const ow = swapped ? item.img.naturalHeight : item.img.naturalWidth;
+        const oh = swapped ? item.img.naturalWidth : item.img.naturalHeight;
+        const base = Math.max(preset.w / ow, preset.h / oh);
+        const scale = base * crop.zoom;
+        const maxX = Math.max(0, (ow * scale - preset.w) / 2);
+        const maxY = Math.max(0, (oh * scale - preset.h) / 2);
+        crop.x = Math.max(-maxX, Math.min(maxX, crop.x));
+        crop.y = Math.max(-maxY, Math.min(maxY, crop.y));
+        return { scale, maxX, maxY };
+      }
+
+      function drawTo(targetCtx, targetCanvas, item, preset, crop) {
+        targetCanvas.width = preset.w;
+        targetCanvas.height = preset.h;
+        clampCrop(item, preset, crop);
+
+        const normalized = ((crop.rotation % 360) + 360) % 360;
+        const swapped = normalized === 90 || normalized === 270;
+        const ow = swapped ? item.img.naturalHeight : item.img.naturalWidth;
+        const oh = swapped ? item.img.naturalWidth : item.img.naturalHeight;
+        const scale = Math.max(preset.w / ow, preset.h / oh) * crop.zoom;
+
+        targetCtx.save();
+        targetCtx.fillStyle = '#0b1115';
+        targetCtx.fillRect(0, 0, preset.w, preset.h);
+        targetCtx.imageSmoothingEnabled = true;
+        targetCtx.imageSmoothingQuality = 'high';
+        targetCtx.translate(preset.w / 2 + crop.x, preset.h / 2 + crop.y);
+        targetCtx.rotate(crop.rotation * Math.PI / 180);
+        targetCtx.scale(crop.flipX ? -scale : scale, crop.flipY ? -scale : scale);
+        targetCtx.drawImage(item.img, -item.img.naturalWidth / 2, -item.img.naturalHeight / 2);
+        targetCtx.restore();
+      }
+
+      function render() {
+        const item = currentItem();
+        const ratio = activePreset.w / activePreset.h;
+        $('stageShell').style.setProperty('--ratio', ratio);
+        $('outputName').textContent = activePreset.name;
+        $('outputRatio').textContent = activePreset.ratio || ratioText(activePreset.w, activePreset.h);
+        $('outputSize').textContent = `${activePreset.w} × ${activePreset.h}`;
+        document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.id === activePreset.id));
+
+        if (!item) {
+          canvas.width = activePreset.w;
+          canvas.height = activePreset.h;
+          ctx.fillStyle = '#0b1115';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+
+        const crop = cropFor(item);
+        drawTo(ctx, canvas, item, activePreset, crop);
+        $('zoomRange').value = Math.round(crop.zoom * 100);
+        $('zoomNumber').textContent = Math.round(crop.zoom * 100) + '%';
+        $('flipX').classList.toggle('active', crop.flipX);
+        $('currentName').textContent = item.name;
+        $('currentMeta').textContent = `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight}  ·  输出 ${activePreset.w} × ${activePreset.h}`;
+      }
+
+      function buildPresetGrid() {
+        $('presetGrid').innerHTML = PRESETS.map(p => `
+          <button class="preset${p.id === activePreset.id ? ' active' : ''}" data-id="${p.id}">
+            <strong>${p.name}</strong>
+            <span>${p.w} × ${p.h}</span>
+            <span class="ratio-tag">${p.ratio}</span>
+          </button>`).join('');
+        document.querySelectorAll('.preset').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activePreset = PRESETS.find(p => p.id === btn.dataset.id);
+            render();
+          });
+        });
+      }
+
+      function refreshAssets() {
+        $('queueCount').textContent = items.length;
+        $('assetList').innerHTML = '';
+        items.forEach((item, index) => {
+          const row = document.createElement('div');
+          row.className = 'asset-row' + (index === activeIndex ? ' active' : '');
+          row.innerHTML = `
+            <button class="asset-main" aria-label="编辑 ${escapeHtml(item.name)}">
+              <img src="${item.url}" alt="">
+              <span>
+                <span class="asset-name">${escapeHtml(item.name)}</span>
+                <span class="asset-meta">${item.img.naturalWidth} × ${item.img.naturalHeight}</span>
+              </span>
+            </button>
+            <button class="remove-btn" title="移除" aria-label="移除 ${escapeHtml(item.name)}">×</button>`;
+          row.querySelector('.asset-main').addEventListener('click', () => selectItem(index));
+          row.querySelector('.remove-btn').addEventListener('click', () => removeItem(index));
+          $('assetList').appendChild(row);
+        });
+        updateAvailability();
+      }
+
+      function escapeHtml(value) {
+        return value.replace(/[&<>'"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
+      }
+
+      function selectItem(index) {
+        activeIndex = index;
+        $('emptyState').classList.toggle('hidden', !!currentItem());
+        refreshAssets();
+        render();
+      }
+
+      function removeItem(index) {
+        const [removed] = items.splice(index, 1);
+        if (removed) URL.revokeObjectURL(removed.url);
+        if (!items.length) activeIndex = -1;
+        else if (activeIndex >= items.length) activeIndex = items.length - 1;
+        else if (index < activeIndex) activeIndex--;
+        $('emptyState').classList.toggle('hidden', !!currentItem());
+        if (!currentItem()) {
+          $('currentName').textContent = '尚未选择图片';
+          $('currentMeta').textContent = '支持 JPG / PNG / WebP / GIF 静态帧';
+        }
+        refreshAssets();
+        render();
+      }
+
+      async function addFiles(fileList) {
+        const files = [...fileList].filter(f => f.type.startsWith('image/'));
+        if (!files.length) return showToast('没有识别到可用图片', true);
+        let added = 0;
+        for (const file of files) {
+          try {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            await new Promise((resolve, reject) => {
+              img.onload = resolve;
+              img.onerror = reject;
+              img.src = url;
+            });
+            items.push({ file, url, img, name: file.name.replace(/\.[^.]+$/, ''), crops: new Map() });
+            added++;
+          } catch {
+            showToast(`${file.name} 读取失败`, true);
+          }
+        }
+        if (activeIndex < 0 && items.length) activeIndex = 0;
+        $('emptyState').classList.toggle('hidden', !!currentItem());
+        refreshAssets();
+        render();
+        if (added) showToast(`已加入 ${added} 张图片`);
+      }
+
+      function updateAvailability() {
+        const disabled = !items.length || busy;
+        $('downloadCurrent').disabled = disabled;
+        $('downloadPresetZip').disabled = disabled;
+        $('downloadQueueZip').disabled = disabled;
+      }
+
+      function showToast(message, error = false) {
+        clearTimeout(toastTimer);
+        const el = $('toast');
+        el.textContent = message;
+        el.classList.toggle('error', error);
+        el.classList.add('show');
+        toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+      }
+
+      function openPicker() { fileInput.click(); }
+      $('addZone').addEventListener('click', openPicker);
+      $('addZone').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openPicker(); });
+      $('emptyAddBtn').addEventListener('click', openPicker);
+      fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+      ['dragenter', 'dragover'].forEach(type => window.addEventListener(type, e => {
+        e.preventDefault(); document.body.classList.add('dragging');
+      }));
+      ['dragleave', 'drop'].forEach(type => window.addEventListener(type, e => {
+        e.preventDefault(); document.body.classList.remove('dragging');
+      }));
+      window.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+      window.addEventListener('paste', e => {
+        const files = [...(e.clipboardData?.files || [])];
+        if (files.length) addFiles(files);
+      });
+
+      canvas.addEventListener('pointerdown', e => {
+        if (!currentItem()) return;
+        canvas.setPointerCapture(e.pointerId);
+        pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        canvas.classList.add('dragging');
+      });
+      canvas.addEventListener('pointermove', e => {
+        if (!pointer || e.pointerId !== pointer.id) return;
+        const item = currentItem();
+        const crop = cropFor(item);
+        const rect = canvas.getBoundingClientRect();
+        crop.x += (e.clientX - pointer.x) * activePreset.w / rect.width;
+        crop.y += (e.clientY - pointer.y) * activePreset.h / rect.height;
+        pointer.x = e.clientX; pointer.y = e.clientY;
+        render();
+      });
+      const endPointer = () => { pointer = null; canvas.classList.remove('dragging'); };
+      canvas.addEventListener('pointerup', endPointer);
+      canvas.addEventListener('pointercancel', endPointer);
+      canvas.addEventListener('wheel', e => {
+        if (!currentItem()) return;
+        e.preventDefault();
+        const crop = cropFor(currentItem());
+        crop.zoom = Math.max(1, Math.min(4, crop.zoom * (e.deltaY < 0 ? 1.045 : .957)));
+        render();
+      }, { passive: false });
+
+      $('zoomRange').addEventListener('input', e => {
+        if (!currentItem()) return;
+        cropFor(currentItem()).zoom = Number(e.target.value) / 100;
+        render();
+      });
+
+      function rotate(degrees) {
+        const item = currentItem(); if (!item) return;
+        const crop = cropFor(item);
+        crop.rotation = (crop.rotation + degrees + 360) % 360;
+        crop.x = crop.y = 0;
+        render();
+      }
+      $('rotateLeft').addEventListener('click', () => rotate(-90));
+      $('rotateRight').addEventListener('click', () => rotate(90));
+      $('flipX').addEventListener('click', () => {
+        const item = currentItem(); if (!item) return;
+        const crop = cropFor(item); crop.flipX = !crop.flipX; render();
+      });
+      $('resetBtn').addEventListener('click', () => {
+        const item = currentItem(); if (!item) return;
+        item.crops.set(presetKey(activePreset), { zoom: 1, x: 0, y: 0, rotation: 0, flipX: false, flipY: false });
+        render();
+      });
+
+      function toggleGuide(type) {
+        const grid = type === 'grid';
+        const overlay = grid ? $('gridOverlay') : $('safeBox');
+        const show = !overlay.classList.contains('show');
+        overlay.classList.toggle('show', show);
+        (grid ? $('gridBtn') : $('safeBtn')).classList.toggle('active', show);
+        (grid ? $('gridToggle') : $('safeToggle')).classList.toggle('active', show);
+      }
+      $('gridBtn').addEventListener('click', () => toggleGuide('grid'));
+      $('gridToggle').addEventListener('click', () => toggleGuide('grid'));
+      $('safeBtn').addEventListener('click', () => toggleGuide('safe'));
+      $('safeToggle').addEventListener('click', () => toggleGuide('safe'));
+
+      $('applyCustom').addEventListener('click', () => {
+        const w = Math.round(Number($('customW').value));
+        const h = Math.round(Number($('customH').value));
+        if (!Number.isFinite(w) || !Number.isFinite(h) || w < 32 || h < 32 || w > 8000 || h > 8000) {
+          return showToast('自定义尺寸需在 32–8000 像素之间', true);
+        }
+        activePreset = { id: `custom-${++customSerial}`, name: '自定义规格', w, h, ratio: ratioText(w, h) };
+        render();
+        showToast(`已应用 ${w} × ${h}`);
+      });
+
+      $('formatSelect').addEventListener('change', () => {
+        updateLimitUi();
+        persistSettings();
+      });
+      $('suffixSelect').addEventListener('change', persistSettings);
+      $('limitEnabled').addEventListener('change', () => { updateLimitUi(); persistSettings(); });
+      $('maxKb').addEventListener('change', persistSettings);
+      $('qualityRange').addEventListener('input', e => {
+        $('qualityNumber').textContent = e.target.value + '%'; persistSettings();
+      });
+      $('qualityNumber').textContent = $('qualityRange').value + '%';
+
+      function updateLimitUi() {
+        const isPng = $('formatSelect').value === 'image/png';
+        $('qualityWrap').style.display = isPng ? 'none' : '';
+        $('limitEnabled').disabled = isPng;
+        $('maxKb').disabled = isPng || !$('limitEnabled').checked;
+        $('limitHint').textContent = isPng
+          ? 'PNG 不支持画质压缩；需要限制大小时请选 JPG 或 WebP。'
+          : $('limitEnabled').checked
+            ? '将从当前画质向下自动压缩，像素尺寸保持不变。'
+            : '开启后自动寻找合适画质，像素尺寸保持不变。';
+      }
+      updateLimitUi();
+
+      function safeName(name) {
+        return name.replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'cover';
+      }
+
+      function outputFileName(item, preset, extension) {
+        const mode = $('suffixSelect').value;
+        const slot = safeName(preset.name);
+        const size = `${preset.w}x${preset.h}`;
+        const suffix = mode === 'slot' ? slot : mode === 'both' ? `${slot}-${size}` : size;
+        return `${safeName(item.name)}-${suffix}.${extension}`;
+      }
+
+      async function canvasBlob(item, preset) {
+        const out = document.createElement('canvas');
+        const outCtx = out.getContext('2d', { alpha: false });
+        drawTo(outCtx, out, item, preset, cropFor(item, preset));
+        const mime = $('formatSelect').value;
+        const requestedQuality = Number($('qualityRange').value) / 100;
+        const encode = quality => new Promise((resolve, reject) => out.toBlob(
+          blob => blob ? resolve(blob) : reject(new Error('导出失败')), mime, quality
+        ));
+        let blob = await encode(requestedQuality);
+        let qualityUsed = requestedQuality;
+        let metLimit = true;
+
+        if ($('limitEnabled').checked && mime !== 'image/png') {
+          const maxKb = Math.max(20, Math.min(10240, Number($('maxKb').value) || 500));
+          const maxBytes = maxKb * 1024;
+          if (blob.size > maxBytes) {
+            let low = .25;
+            let high = requestedQuality;
+            let best = await encode(low);
+            qualityUsed = low;
+            metLimit = best.size <= maxBytes;
+            for (let i = 0; i < 7; i++) {
+              const mid = (low + high) / 2;
+              const candidate = await encode(mid);
+              if (candidate.size <= maxBytes) {
+                best = candidate; qualityUsed = mid; low = mid; metLimit = true;
+              } else {
+                high = mid;
+                if (!metLimit && candidate.size < best.size) { best = candidate; qualityUsed = mid; }
+              }
+            }
+            blob = best;
+          }
+        }
+        return { blob, qualityUsed, metLimit };
+      }
+
+      function extensionForMime(mime) {
+        return mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+      }
+
+      function triggerDownload(blob, name) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1200);
+      }
+
+      function formatBytes(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(bytes < 10240 ? 1 : 0) + ' KB';
+        return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+      }
+
+      async function withBusy(label, task) {
+        if (busy) return;
+        busy = true; updateAvailability(); showToast(label);
+        try { await task(); }
+        catch (err) { showToast(err?.message || '导出失败', true); }
+        finally { busy = false; updateAvailability(); }
+      }
+
+      $('downloadCurrent').addEventListener('click', () => withBusy('正在生成图片…', async () => {
+        const item = currentItem();
+        const result = await canvasBlob(item, activePreset);
+        const ext = extensionForMime($('formatSelect').value);
+        triggerDownload(result.blob, outputFileName(item, activePreset, ext));
+        const qualityText = $('formatSelect').value === 'image/png' ? '' : ` · 画质 ${Math.round(result.qualityUsed * 100)}%`;
+        const limitText = result.metLimit ? '' : ' · 未能压到目标大小';
+        showToast(`已导出 ${formatBytes(result.blob.size)}${qualityText}${limitText}`, !result.metLimit);
+      }));
+
+      $('downloadPresetZip').addEventListener('click', () => withBusy('正在生成全部官网规格…', async () => {
+        const item = currentItem();
+        const ext = extensionForMime($('formatSelect').value);
+        const entries = [];
+        for (let i = 0; i < PRESETS.length; i++) {
+          showToast(`正在生成 ${i + 1}/${PRESETS.length}：${PRESETS[i].name}`);
+          const result = await canvasBlob(item, PRESETS[i]);
+          entries.push({ name: outputFileName(item, PRESETS[i], ext), blob: result.blob });
+        }
+        const zip = await makeZip(entries);
+        triggerDownload(zip, `${safeName(item.name)}-PConline官网规格.zip`);
+        showToast(`已打包 ${entries.length} 个规格`);
+      }));
+
+      $('downloadQueueZip').addEventListener('click', () => withBusy('正在批量裁切队列…', async () => {
+        const ext = extensionForMime($('formatSelect').value);
+        const entries = [];
+        for (let i = 0; i < items.length; i++) {
+          showToast(`正在处理 ${i + 1}/${items.length}：${items[i].name}`);
+          const result = await canvasBlob(items[i], activePreset);
+          entries.push({ name: outputFileName(items[i], activePreset, ext), blob: result.blob });
+        }
+        const zip = await makeZip(entries);
+        triggerDownload(zip, `PConline-${safeName(activePreset.name)}-${activePreset.w}x${activePreset.h}.zip`);
+        showToast(`已打包 ${entries.length} 张图片`);
+      }));
+
+      const CRC_TABLE = (() => {
+        const table = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+          let c = n;
+          for (let k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+          table[n] = c >>> 0;
+        }
+        return table;
+      })();
+
+      function crc32(bytes) {
+        let crc = 0xffffffff;
+        for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+        return (crc ^ 0xffffffff) >>> 0;
+      }
+
+      function dosTimeDate(date = new Date()) {
+        return {
+          time: (date.getHours() << 11) | (date.getMinutes() << 5) | (date.getSeconds() >> 1),
+          date: ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate()
+        };
+      }
+
+      async function makeZip(entries) {
+        const encoder = new TextEncoder();
+        const prepared = [];
+        for (const entry of entries) {
+          const data = new Uint8Array(await entry.blob.arrayBuffer());
+          prepared.push({ name: encoder.encode(entry.name), data, crc: crc32(data) });
+        }
+
+        const parts = [];
+        const central = [];
+        let offset = 0;
+        const stamp = dosTimeDate();
+        for (const entry of prepared) {
+          const local = new Uint8Array(30 + entry.name.length);
+          const v = new DataView(local.buffer);
+          v.setUint32(0, 0x04034b50, true);
+          v.setUint16(4, 20, true);
+          v.setUint16(6, 0x0800, true);
+          v.setUint16(8, 0, true);
+          v.setUint16(10, stamp.time, true); v.setUint16(12, stamp.date, true);
+          v.setUint32(14, entry.crc, true);
+          v.setUint32(18, entry.data.length, true); v.setUint32(22, entry.data.length, true);
+          v.setUint16(26, entry.name.length, true); v.setUint16(28, 0, true);
+          local.set(entry.name, 30);
+          parts.push(local, entry.data);
+
+          const c = new Uint8Array(46 + entry.name.length);
+          const cv = new DataView(c.buffer);
+          cv.setUint32(0, 0x02014b50, true);
+          cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+          cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true);
+          cv.setUint16(12, stamp.time, true); cv.setUint16(14, stamp.date, true);
+          cv.setUint32(16, entry.crc, true);
+          cv.setUint32(20, entry.data.length, true); cv.setUint32(24, entry.data.length, true);
+          cv.setUint16(28, entry.name.length, true);
+          cv.setUint16(30, 0, true); cv.setUint16(32, 0, true); cv.setUint16(34, 0, true);
+          cv.setUint16(36, 0, true); cv.setUint32(38, 0, true); cv.setUint32(42, offset, true);
+          c.set(entry.name, 46);
+          central.push(c);
+          offset += local.length + entry.data.length;
+        }
+
+        const centralSize = central.reduce((sum, part) => sum + part.length, 0);
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true); ev.setUint16(6, 0, true);
+        ev.setUint16(8, prepared.length, true); ev.setUint16(10, prepared.length, true);
+        ev.setUint32(12, centralSize, true); ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+        return new Blob([...parts, ...central, eocd], { type: 'application/zip' });
+      }
+
+      window.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+          e.preventDefault(); if (!$('downloadCurrent').disabled) $('downloadCurrent').click(); return;
+        }
+        if (e.target.matches('input, select')) return;
+        const item = currentItem(); if (!item) return;
+        if (e.key.toLowerCase() === 'r') { e.preventDefault(); rotate(e.shiftKey ? 90 : -90); return; }
+        const delta = e.shiftKey ? 10 : 1;
+        const crop = cropFor(item);
+        if (e.key === 'ArrowLeft') crop.x -= delta;
+        else if (e.key === 'ArrowRight') crop.x += delta;
+        else if (e.key === 'ArrowUp') crop.y -= delta;
+        else if (e.key === 'ArrowDown') crop.y += delta;
+        else if (e.key === '+' || e.key === '=') crop.zoom = Math.min(4, crop.zoom + .02);
+        else if (e.key === '-') crop.zoom = Math.max(1, crop.zoom - .02);
+        else return;
+        e.preventDefault(); render();
+      });
+
+      $('auditBtn').addEventListener('click', () => $('auditDialog').showModal());
+      $('closeAudit').addEventListener('click', () => $('auditDialog').close());
+      $('auditDialog').addEventListener('click', e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.currentTarget.close();
+      });
+      $('settingsBtn').addEventListener('click', () => document.body.classList.toggle('settings-open'));
+
+      buildPresetGrid();
+      refreshAssets();
+      render();
+    })();
+  </script>
+</body>
+</html>
