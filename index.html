@@ -315,6 +315,14 @@
     .label { display: block; color: var(--muted); font-size: 10px; margin-bottom: 5px; }
     .quality-wrap { margin-top: 10px; }
     .quality-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
+    .scale-wrap { margin-top: 10px; }
+    .scale-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 7px; }
+    .scale-option {
+      border: 1px solid var(--line); border-radius: 9px; padding: 8px 6px;
+      background: #fff; cursor: pointer; color: var(--muted); font-size: 11px; font-weight: 700;
+    }
+    .scale-option:hover { border-color: #9edced; background: #f5fcff; }
+    .scale-option.active { border-color: var(--brand); color: var(--brand-deep); background: #eafaff; box-shadow: 0 0 0 2px rgba(0,174,233,.08); }
     .size-limit {
       display: grid; grid-template-columns: auto 86px auto; gap: 7px; align-items: center;
       margin-top: 10px; padding: 9px 10px; border-radius: 10px;
@@ -537,6 +545,15 @@
             <div class="quality-head"><span>画质</span><strong id="qualityNumber">92%</strong></div>
             <input id="qualityRange" type="range" min="60" max="100" value="92" step="1">
           </div>
+          <div class="scale-wrap">
+            <div class="quality-head"><span>导出倍率</span><strong id="scaleNumber">100%</strong></div>
+            <div class="scale-options" id="scaleOptions" role="group" aria-label="导出倍率">
+              <button class="scale-option active" type="button" data-scale="1" aria-pressed="true">100%</button>
+              <button class="scale-option" type="button" data-scale="2" aria-pressed="false">200%</button>
+              <button class="scale-option" type="button" data-scale="3" aria-pressed="false">300%</button>
+            </div>
+            <p class="limit-hint">基于所选封面规格等比放大像素尺寸，构图与比例不变；原图分辨率越高，清晰度收益越明显。</p>
+          </div>
           <div class="size-limit">
             <label><input id="limitEnabled" type="checkbox"> 限制大小</label>
             <input class="field" id="maxKb" type="number" min="20" max="10240" step="10" value="500" aria-label="最大文件大小 KB">
@@ -622,6 +639,7 @@
       let pointer = null;
       let busy = false;
       let toastTimer = 0;
+      let outputScale = 1;
 
       const saved = (() => {
         try { return JSON.parse(localStorage.getItem('pconline-cropper-settings') || '{}'); }
@@ -630,6 +648,7 @@
 
       if (saved.format) $('formatSelect').value = saved.format;
       if (saved.quality) $('qualityRange').value = saved.quality;
+      if ([1, 2, 3].includes(Number(saved.outputScale))) outputScale = Number(saved.outputScale);
       if (saved.suffix) $('suffixSelect').value = saved.suffix;
       if (saved.limit) $('limitEnabled').checked = true;
       if (saved.maxKb) $('maxKb').value = saved.maxKb;
@@ -639,6 +658,7 @@
           localStorage.setItem('pconline-cropper-settings', JSON.stringify({
             format: $('formatSelect').value,
             quality: $('qualityRange').value,
+            outputScale,
             suffix: $('suffixSelect').value,
             limit: $('limitEnabled').checked,
             maxKb: $('maxKb').value
@@ -676,23 +696,25 @@
         return { scale, maxX, maxY };
       }
 
-      function drawTo(targetCtx, targetCanvas, item, preset, crop) {
-        targetCanvas.width = preset.w;
-        targetCanvas.height = preset.h;
+      function drawTo(targetCtx, targetCanvas, item, preset, crop, exportScale = 1) {
+        const outputW = preset.w * exportScale;
+        const outputH = preset.h * exportScale;
+        targetCanvas.width = outputW;
+        targetCanvas.height = outputH;
         clampCrop(item, preset, crop);
 
         const normalized = ((crop.rotation % 360) + 360) % 360;
         const swapped = normalized === 90 || normalized === 270;
         const ow = swapped ? item.img.naturalHeight : item.img.naturalWidth;
         const oh = swapped ? item.img.naturalWidth : item.img.naturalHeight;
-        const scale = Math.max(preset.w / ow, preset.h / oh) * crop.zoom;
+        const scale = Math.max(preset.w / ow, preset.h / oh) * crop.zoom * exportScale;
 
         targetCtx.save();
         targetCtx.fillStyle = '#0b1115';
-        targetCtx.fillRect(0, 0, preset.w, preset.h);
+        targetCtx.fillRect(0, 0, outputW, outputH);
         targetCtx.imageSmoothingEnabled = true;
         targetCtx.imageSmoothingQuality = 'high';
-        targetCtx.translate(preset.w / 2 + crop.x, preset.h / 2 + crop.y);
+        targetCtx.translate(outputW / 2 + crop.x * exportScale, outputH / 2 + crop.y * exportScale);
         targetCtx.rotate(crop.rotation * Math.PI / 180);
         targetCtx.scale(crop.flipX ? -scale : scale, crop.flipY ? -scale : scale);
         targetCtx.drawImage(item.img, -item.img.naturalWidth / 2, -item.img.naturalHeight / 2);
@@ -705,7 +727,7 @@
         $('stageShell').style.setProperty('--ratio', ratio);
         $('outputName').textContent = activePreset.name;
         $('outputRatio').textContent = activePreset.ratio || ratioText(activePreset.w, activePreset.h);
-        $('outputSize').textContent = `${activePreset.w} × ${activePreset.h}`;
+        $('outputSize').textContent = `${activePreset.w * outputScale} × ${activePreset.h * outputScale}`;
         document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.id === activePreset.id));
 
         if (!item) {
@@ -722,7 +744,7 @@
         $('zoomNumber').textContent = Math.round(crop.zoom * 100) + '%';
         $('flipX').classList.toggle('active', crop.flipX);
         $('currentName').textContent = item.name;
-        $('currentMeta').textContent = `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight}  ·  输出 ${activePreset.w} × ${activePreset.h}`;
+        $('currentMeta').textContent = `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight}  ·  输出 ${activePreset.w * outputScale} × ${activePreset.h * outputScale}`;
       }
 
       function buildPresetGrid() {
@@ -935,6 +957,24 @@
         $('qualityNumber').textContent = e.target.value + '%'; persistSettings();
       });
       $('qualityNumber').textContent = $('qualityRange').value + '%';
+      document.querySelectorAll('.scale-option').forEach(btn => {
+        const scale = Number(btn.dataset.scale);
+        const active = scale === outputScale;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+        btn.addEventListener('click', () => {
+          outputScale = scale;
+          document.querySelectorAll('.scale-option').forEach(option => {
+            const selected = Number(option.dataset.scale) === outputScale;
+            option.classList.toggle('active', selected);
+            option.setAttribute('aria-pressed', String(selected));
+          });
+          $('scaleNumber').textContent = `${outputScale * 100}%`;
+          persistSettings();
+          render();
+        });
+      });
+      $('scaleNumber').textContent = `${outputScale * 100}%`;
 
       function updateLimitUi() {
         const isPng = $('formatSelect').value === 'image/png';
@@ -956,7 +996,7 @@
       function outputFileName(item, preset, extension) {
         const mode = $('suffixSelect').value;
         const slot = safeName(preset.name);
-        const size = `${preset.w}x${preset.h}`;
+        const size = `${preset.w * outputScale}x${preset.h * outputScale}`;
         const suffix = mode === 'slot' ? slot : mode === 'both' ? `${slot}-${size}` : size;
         return `${safeName(item.name)}-${suffix}.${extension}`;
       }
@@ -964,7 +1004,7 @@
       async function canvasBlob(item, preset) {
         const out = document.createElement('canvas');
         const outCtx = out.getContext('2d', { alpha: false });
-        drawTo(outCtx, out, item, preset, cropFor(item, preset));
+        drawTo(outCtx, out, item, preset, cropFor(item, preset), outputScale);
         const mime = $('formatSelect').value;
         const requestedQuality = Number($('qualityRange').value) / 100;
         const encode = quality => new Promise((resolve, reject) => out.toBlob(
@@ -1032,7 +1072,7 @@
         triggerDownload(result.blob, outputFileName(item, activePreset, ext));
         const qualityText = $('formatSelect').value === 'image/png' ? '' : ` · 画质 ${Math.round(result.qualityUsed * 100)}%`;
         const limitText = result.metLimit ? '' : ' · 未能压到目标大小';
-        showToast(`已导出 ${formatBytes(result.blob.size)}${qualityText}${limitText}`, !result.metLimit);
+        showToast(`已导出 ${activePreset.w * outputScale} × ${activePreset.h * outputScale} · ${formatBytes(result.blob.size)}${qualityText}${limitText}`, !result.metLimit);
       }));
 
       $('downloadPresetZip').addEventListener('click', () => withBusy('正在生成全部官网规格…', async () => {
@@ -1045,7 +1085,7 @@
           entries.push({ name: outputFileName(item, PRESETS[i], ext), blob: result.blob });
         }
         const zip = await makeZip(entries);
-        triggerDownload(zip, `${safeName(item.name)}-PConline官网规格.zip`);
+        triggerDownload(zip, `${safeName(item.name)}-PConline官网规格-${outputScale}x.zip`);
         showToast(`已打包 ${entries.length} 个规格`);
       }));
 
@@ -1058,7 +1098,7 @@
           entries.push({ name: outputFileName(items[i], activePreset, ext), blob: result.blob });
         }
         const zip = await makeZip(entries);
-        triggerDownload(zip, `PConline-${safeName(activePreset.name)}-${activePreset.w}x${activePreset.h}.zip`);
+        triggerDownload(zip, `PConline-${safeName(activePreset.name)}-${activePreset.w * outputScale}x${activePreset.h * outputScale}.zip`);
         showToast(`已打包 ${entries.length} 张图片`);
       }));
 
