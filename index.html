@@ -552,7 +552,7 @@
               <button class="scale-option" type="button" data-scale="2" aria-pressed="false">200%</button>
               <button class="scale-option" type="button" data-scale="3" aria-pressed="false">300%</button>
             </div>
-            <p class="limit-hint">基于所选封面规格等比放大像素尺寸，构图与比例不变；原图分辨率越高，清晰度收益越明显。</p>
+            <p class="limit-hint">预览与导出均按当前倍率生成高分辨率像素，构图与比例不变；原图分辨率越高，清晰度收益越明显。</p>
           </div>
           <div class="size-limit">
             <label><input id="limitEnabled" type="checkbox"> 限制大小</label>
@@ -731,15 +731,18 @@
         document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.id === activePreset.id));
 
         if (!item) {
-          canvas.width = activePreset.w;
-          canvas.height = activePreset.h;
+          canvas.width = activePreset.w * outputScale;
+          canvas.height = activePreset.h * outputScale;
           ctx.fillStyle = '#0b1115';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           return;
         }
 
         const crop = cropFor(item);
-        drawTo(ctx, canvas, item, activePreset, crop);
+        // Render the preview at the selected export resolution, then let CSS scale it
+        // down to the stage size. This keeps the crop geometry unchanged while making
+        // 200%/300% previews use a genuinely higher-resolution backing canvas.
+        drawTo(ctx, canvas, item, activePreset, crop, outputScale);
         $('zoomRange').value = Math.round(crop.zoom * 100);
         $('zoomNumber').textContent = Math.round(crop.zoom * 100) + '%';
         $('flipX').classList.toggle('active', crop.flipX);
