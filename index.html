@@ -393,10 +393,371 @@
       .workspace-foot { grid-template-columns: auto 1fr auto; }
       .right-panel { top: 80px; right: 8px; height: calc(100vh - 88px); max-width: calc(100vw - 16px); }
     }
-    .mobile-settings { display: none; }
+    .mobile-settings, .mobile-queue { display: none; }
+
+    /* 2026 Pro editor redesign — offline, token-driven, and touch friendly */
+    :root {
+      color-scheme: dark;
+      --bg: #071216;
+      --panel: #0d1b20;
+      --panel-raised: #11242a;
+      --panel-soft: #162b31;
+      --ink: #eefbf8;
+      --muted: #91aaa7;
+      --line: #223a40;
+      --brand: #14b8a6;
+      --brand-deep: #0d9488;
+      --accent: #ea580c;
+      --accent-bright: #f97316;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #22c55e;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .28);
+      --radius: 16px;
+      --ease: cubic-bezier(.16, 1, .3, 1);
+      font-family: "Segoe UI Variable", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      min-height: 100dvh;
+      background:
+        radial-gradient(circle at 20% -20%, rgba(20, 184, 166, .16), transparent 34rem),
+        radial-gradient(circle at 100% 10%, rgba(234, 88, 12, .08), transparent 28rem),
+        var(--bg);
+      color: var(--ink);
+      font-size: 14px;
+    }
+    button, input, select { touch-action: manipulation; }
+    button:focus-visible, input:focus-visible, select:focus-visible {
+      outline: 3px solid rgba(20, 184, 166, .42);
+      outline-offset: 2px;
+    }
+    button { cursor: pointer; }
+    .skip-link {
+      position: fixed; z-index: 2000; left: 12px; top: 8px; transform: translateY(-160%);
+      padding: 10px 14px; border-radius: 9px; background: #fff; color: #052e2b; font-weight: 800;
+      transition: transform .18s var(--ease);
+    }
+    .skip-link:focus { transform: translateY(0); }
+
+    .topbar {
+      position: relative;
+      z-index: 30;
+      height: 64px;
+      padding: 0 20px;
+      background: rgba(7, 18, 22, .88);
+      border-bottom: 1px solid rgba(153, 246, 228, .12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+      backdrop-filter: blur(18px);
+    }
+    .topbar::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      background: linear-gradient(var(--brand), var(--accent-bright));
+    }
+    .brand { gap: 12px; }
+    .brand-mark, .brand-logo { width: 40px; height: 40px; flex-basis: 40px; }
+    .brand h1 { font-size: 18px; letter-spacing: -.02em; }
+    .brand p { margin-top: 3px; font-size: 11px; color: #98b7b3; opacity: 1; }
+    .top-actions { gap: 8px; }
+    .privacy-pill, .ghost-light {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .035);
+      color: #c9dcda;
+      border-radius: 10px;
+      padding: 8px 11px;
+      font-size: 12px;
+      transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
+    }
+    .ghost-light:hover { background: rgba(20, 184, 166, .1); border-color: rgba(20, 184, 166, .35); color: #fff; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(34,197,94,.1); }
+
+    .app {
+      height: calc(100dvh - 64px);
+      min-height: 0;
+      grid-template-columns: 264px minmax(420px, 1fr) 356px;
+      gap: 12px;
+      padding: 12px;
+    }
+    .panel {
+      background: rgba(13, 27, 32, .96);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .left-panel, .right-panel, .workspace { height: 100%; min-height: 0; }
+    .panel-head { padding: 18px 16px 14px; }
+    .panel-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .eyebrow { margin-bottom: 5px; color: #5eead4; font-size: 10px; letter-spacing: .16em; }
+    .panel h2 { font-size: 17px; letter-spacing: -.02em; }
+    .subtle { color: var(--muted); }
+    .count-badge {
+      display: inline-grid; place-items: center; min-width: 25px; height: 22px; margin-left: 5px;
+      padding: 0 7px; border-radius: 999px; background: rgba(20,184,166,.14); color: #5eead4; font-size: 11px;
+    }
+    .drawer-close {
+      display: none; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 10px;
+      background: rgba(255,255,255,.035); color: var(--muted); font-size: 20px;
+    }
+
+    .add-zone {
+      width: calc(100% - 28px);
+      margin: 0 14px 12px;
+      min-height: 88px;
+      border: 1px dashed rgba(94,234,212,.38);
+      border-radius: 13px;
+      padding: 14px 12px;
+      background: linear-gradient(145deg, rgba(20,184,166,.09), rgba(20,184,166,.025));
+      color: var(--ink);
+    }
+    .add-zone strong::before { content: "+"; display: inline-grid; place-items: center; width: 21px; height: 21px; margin-right: 6px; border-radius: 7px; background: var(--brand); color: #042f2e; }
+    .add-zone strong { font-size: 13px; }
+    .add-zone span { color: var(--muted); font-size: 11px; }
+    .add-zone:hover, body.dragging .add-zone { border-color: #5eead4; background: rgba(20,184,166,.14); transform: none; }
+
+    .asset-list { flex: 1; min-height: 0; padding: 0 9px 12px; overflow-x: hidden; }
+    .asset-row { grid-template-columns: minmax(0,1fr) 44px; gap: 5px; margin: 4px 0; padding: 5px; border-radius: 12px; }
+    .asset-row.active { background: rgba(20,184,166,.11); border-color: rgba(94,234,212,.25); }
+    .asset-main { grid-template-columns: 58px minmax(0,1fr); gap: 10px; min-height: 52px; }
+    .asset-main img { width: 58px; height: 44px; border-radius: 8px; background: #091418; }
+    .asset-name { color: #e8f7f5; font-size: 12px; }
+    .asset-meta { color: var(--muted); font-size: 10px; }
+    .remove-btn { width: 44px; height: 44px; color: #77918e; }
+    .remove-btn:hover { color: #fecaca; background: rgba(239,68,68,.12); }
+    .queue-foot {
+      min-height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
+      border-top: 1px solid var(--line); color: var(--muted); font-size: 11px;
+    }
+    .queue-foot strong { color: #cfe3e0; font-size: 11px; }
+
+    .workspace { background: #081419; border-color: #20363c; }
+    .workspace-head { min-height: 62px; padding: 9px 13px; border-bottom-color: var(--line); }
+    .file-title strong { font-size: 13px; color: #effbf9; }
+    .file-title span { color: #789693; font-size: 10px; }
+    .toolbar { gap: 7px; flex-wrap: nowrap; }
+    .tool-btn {
+      width: 44px; height: 44px; border-radius: 10px; border-color: #294149;
+      background: #10242a; color: #b8cfcc; transition: background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+    }
+    .tool-btn:hover { transform: none; background: #18323a; border-color: #3c5c63; color: #fff; }
+    .tool-btn.active { color: #5eead4; border-color: rgba(94,234,212,.5); background: rgba(20,184,166,.12); }
+    .tool-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+    .stage-area {
+      padding: 24px;
+      background:
+        linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%),
+        linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%),
+        radial-gradient(circle at 50% 45%, rgba(20,184,166,.055), transparent 42%);
+      background-size: 26px 26px, 26px 26px, auto;
+      background-position: 0 0, 13px 13px, 0 0;
+    }
+    .stage-shell {
+      width: min(100%, calc((100dvh - 250px) * var(--ratio)));
+      max-height: calc(100dvh - 250px);
+      border-radius: 8px;
+      box-shadow: 0 26px 70px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.055);
+    }
+    .workspace-foot {
+      min-height: 66px;
+      grid-template-columns: auto minmax(120px,1fr) 46px auto;
+      gap: 12px; padding: 10px 14px; border-top-color: var(--line);
+    }
+    .zoom-label { color: #789693; font-size: 11px; }
+    .zoom-number { color: #c9ddda; }
+    input[type="range"] { accent-color: var(--brand); }
+    .pixel-button {
+      min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 0 12px;
+      border: 1px solid #2b464d; border-radius: 10px; background: #10242a; color: #bcd1ce; font-size: 11px; font-weight: 700;
+    }
+    .pixel-button svg, .preflight-button svg, .primary svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .pixel-button:hover { border-color: rgba(94,234,212,.45); color: #5eead4; }
+    .pixel-button:disabled { opacity: .35; cursor: not-allowed; }
+
+    .empty-state { inset: 62px 0 0; background: #081419; }
+    .empty-card { max-width: 450px; }
+    .empty-icon { width: 78px; height: 78px; color: #5eead4; background: rgba(20,184,166,.08); border-color: rgba(94,234,212,.2); }
+    .empty-icon svg { width: 38px; height: 38px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .empty-card h3 { font-size: 22px; letter-spacing: -.025em; }
+    .empty-card p { color: #8eaaa7; font-size: 13px; }
+
+    .right-panel { position: relative; }
+    .right-scroll { flex: 1; min-height: 0; padding: 0 16px 16px; }
+    .section { padding: 16px 1px; border-top-color: var(--line); }
+    .section-title { align-items: center; margin-bottom: 12px; }
+    .section-title h3 { font-size: 13px; color: #e9f7f5; }
+    .section-title span { color: #78928f; font-size: 10px; }
+    .preset-grid { gap: 8px; }
+    .preset {
+      min-height: 66px; padding: 10px; border-color: #284047; border-radius: 11px;
+      background: #102228; color: var(--ink); transition: background .18s var(--ease), border-color .18s var(--ease), box-shadow .18s var(--ease);
+    }
+    .preset:hover { border-color: rgba(94,234,212,.4); background: #153039; }
+    .preset.active { border-color: #2dd4bf; background: rgba(20,184,166,.12); box-shadow: inset 0 0 0 1px rgba(45,212,191,.16); }
+    .preset strong { font-size: 12px; }
+    .preset span { color: #819d99; font-size: 10px; }
+    .ratio-tag { color: #5eead4 !important; }
+    .field, select {
+      height: 44px; padding: 0 11px; border-color: #2b444b; border-radius: 10px; background: #0b1b20; color: #edf9f7; font-size: 13px;
+    }
+    .field:hover, select:hover { border-color: #3c5c63; }
+    .small-secondary, .toggle, .scale-option, .secondary {
+      min-height: 44px; border-color: #2b444b; border-radius: 10px; background: #102228; color: #c7dbd8;
+      transition: background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease);
+    }
+    .small-secondary { padding: 10px; color: #5eead4; }
+    .small-secondary:hover, .toggle:hover, .scale-option:hover, .secondary:hover { background: #163038; border-color: #41636b; }
+    .toggle.active, .scale-option.active { border-color: #2dd4bf; color: #5eead4; background: rgba(20,184,166,.12); box-shadow: none; }
+    .label, .quality-head { color: #89a3a0; font-size: 11px; }
+    .limit-hint { color: #78928f; font-size: 10px; line-height: 1.55; }
+    .size-limit { background: #0b1b20; border-color: #284047; font-size: 11px; }
+    .size-limit .field { height: 36px; }
+
+    .position-head { display: flex; justify-content: space-between; margin: 14px 1px 7px; color: #89a3a0; font-size: 10px; }
+    .position-head span:last-child { color: #657f7c; }
+    .position-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .position-grid button { height: 44px; border: 1px solid #294249; border-radius: 9px; background: #0b1b20; }
+    .position-grid button span { display: block; width: 7px; height: 7px; margin: auto; border-radius: 50%; background: #78928f; transition: background .18s, box-shadow .18s; }
+    .position-grid button:hover { border-color: rgba(94,234,212,.4); background: rgba(20,184,166,.08); }
+    .position-grid button:hover span { background: #5eead4; box-shadow: 0 0 0 4px rgba(94,234,212,.1); }
+
+    .quality-insight {
+      display: grid; grid-template-columns: 42px 1fr; gap: 11px; align-items: center;
+      padding: 12px; border: 1px solid #294249; border-radius: 12px; background: #0b1b20;
+    }
+    .quality-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 11px; background: rgba(148,163,184,.1); color: #94a3b8; }
+    .quality-icon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .quality-insight strong { display: block; font-size: 12px; }
+    .quality-insight span { display: block; margin-top: 4px; color: #78928f; font-size: 10px; line-height: 1.45; }
+    .quality-insight[data-state="good"] { border-color: rgba(34,197,94,.28); background: rgba(34,197,94,.055); }
+    .quality-insight[data-state="good"] .quality-icon { color: #86efac; background: rgba(34,197,94,.11); }
+    .quality-insight[data-state="warn"] { border-color: rgba(245,158,11,.32); background: rgba(245,158,11,.06); }
+    .quality-insight[data-state="warn"] .quality-icon { color: #fcd34d; background: rgba(245,158,11,.11); }
+    .quality-insight[data-state="bad"] { border-color: rgba(239,68,68,.32); background: rgba(239,68,68,.06); }
+    .quality-insight[data-state="bad"] .quality-icon { color: #fca5a5; background: rgba(239,68,68,.11); }
+
+    .right-dock { flex: 0 0 auto; padding: 12px 16px 16px; border-top: 1px solid var(--line); background: rgba(9,21,25,.98); box-shadow: 0 -16px 30px rgba(0,0,0,.18); }
+    .output-card { margin: 0 0 10px; padding: 10px 12px; border-color: #294249; background: #102228; }
+    .output-card strong { color: #eefbf8; }
+    .output-card span { color: #78928f; }
+    .size-badge { color: #5eead4; font-size: 12px; }
+    .export-stack { gap: 8px; }
+    .primary {
+      min-height: 46px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border-radius: 10px; background: linear-gradient(115deg, #c2410c, var(--accent-bright));
+      box-shadow: 0 8px 22px rgba(234,88,12,.2); font-size: 13px;
+      transition: filter .18s var(--ease), box-shadow .18s var(--ease);
+    }
+    .primary:hover { transform: none; filter: brightness(1.08); box-shadow: 0 10px 26px rgba(234,88,12,.3); }
+    .secondary { padding: 10px 12px; font-size: 11px; }
+    .preflight-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; color: #5eead4; }
+    .batch-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .export-progress { margin: 0 0 10px; padding: 10px; border-radius: 10px; background: rgba(20,184,166,.07); border: 1px solid rgba(94,234,212,.18); }
+    .export-progress > div:first-child { display: flex; justify-content: space-between; color: #a7c0bd; font-size: 10px; }
+    .progress-track { height: 5px; margin-top: 8px; overflow: hidden; border-radius: 999px; background: #1b3339; }
+    .progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), #5eead4); transition: width .2s var(--ease); }
+    .tips { color: #78928f; font-size: 10px; }
+    kbd { border-color: #36535a; background: #102228; color: #bcd1ce; }
+
+    dialog { color: var(--ink); background: #0d1b20; border: 1px solid #294249; box-shadow: 0 30px 100px rgba(0,0,0,.6); }
+    dialog::backdrop { background: rgba(1,8,10,.72); backdrop-filter: blur(7px); }
+    .dialog-head { border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { color: #f0fbf9; }
+    .dialog-head p { color: #819d99; }
+    .icon-close { width: 44px; height: 44px; border: 1px solid #2b444b; background: #102228; color: #9ab2af; }
+    .audit-table th, .audit-table td { border-bottom-color: var(--line); }
+    .audit-table th { color: #8ea8a5; }
+    .audit-note { background: rgba(20,184,166,.08); color: #bcd8d4; }
+    .wide-dialog { width: min(1080px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
+    .preflight-grid { max-height: calc(100dvh - 210px); overflow: auto; padding: 18px 22px; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .preflight-card { overflow: hidden; border: 1px solid #294249; border-radius: 13px; background: #0a181d; }
+    .preflight-preview { display: grid; place-items: center; min-height: 120px; padding: 10px; background: #061115; }
+    .preflight-preview canvas { display: block; max-width: 100%; max-height: 170px; border-radius: 4px; }
+    .preflight-info { padding: 11px 12px 12px; }
+    .preflight-info > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .preflight-info strong { font-size: 12px; }
+    .preflight-info p { margin: 6px 0 10px; color: #78928f; font-size: 10px; }
+    .preflight-status { padding: 4px 7px; border-radius: 999px; background: rgba(148,163,184,.1); color: #a9bfbc; font-size: 9px; white-space: nowrap; }
+    .preflight-status.good { background: rgba(34,197,94,.1); color: #86efac; }
+    .preflight-status.warn { background: rgba(245,158,11,.1); color: #fcd34d; }
+    .preflight-status.bad { background: rgba(239,68,68,.1); color: #fca5a5; }
+    .preflight-edit { width: 100%; min-height: 44px; border: 1px solid #2b444b; border-radius: 9px; background: #102228; color: #c7dbd8; font-size: 11px; }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 9px; padding: 14px 22px 18px; border-top: 1px solid var(--line); }
+    .dialog-actions button { min-width: 150px; }
+    .pixel-dialog { width: min(1180px, calc(100vw - 28px)); height: min(820px, calc(100dvh - 28px)); }
+    .pixel-viewer { height: calc(100% - 142px); overflow: auto; padding: 18px; background: #050d10; }
+    .pixel-viewer canvas { display: block; background: #0b1115; box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+    .pixel-foot { min-height: 46px; padding: 0 22px; display: flex; align-items: center; border-top: 1px solid var(--line); color: #78928f; font-size: 10px; }
+    .toast { z-index: 1000; background: #133139; border: 1px solid rgba(94,234,212,.2); }
+    .toast.error { background: #4b1820; border-color: rgba(248,113,113,.25); }
+    .drawer-backdrop { position: fixed; z-index: 35; inset: 64px 0 0; display: none; background: rgba(2,8,10,.58); backdrop-filter: blur(3px); }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: 252px minmax(380px,1fr); }
+      .right-panel { position: fixed; z-index: 40; top: 76px; right: 12px; width: min(370px, calc(100vw - 24px)); height: calc(100dvh - 88px); transform: translateX(calc(100% + 24px)); transition: transform .24s var(--ease); }
+      body.settings-open .right-panel { transform: translateX(0); }
+      body.settings-open .drawer-backdrop { display: block; }
+      .mobile-settings { display: inline-flex !important; }
+      .right-panel .drawer-close { display: grid; place-items: center; }
+    }
+
+    @media (max-width: 820px) {
+      .topbar { padding: 0 12px; }
+      .privacy-pill, #auditBtn { display: none; }
+      .mobile-queue { display: inline-flex; }
+      .app { display: block; height: calc(100dvh - 64px); padding: 8px; }
+      .workspace { height: 100%; }
+      .left-panel {
+        display: flex; position: fixed; z-index: 40; left: 8px; top: 72px; width: min(330px, calc(100vw - 16px)); height: calc(100dvh - 80px);
+        transform: translateX(calc(-100% - 20px)); transition: transform .24s var(--ease);
+      }
+      body.queue-open .left-panel { transform: translateX(0); }
+      body.queue-open .drawer-backdrop { display: block; }
+      .left-panel .drawer-close { display: grid; place-items: center; }
+      .stage-area { padding: 12px; }
+      .stage-shell { width: min(100%, calc((100dvh - 242px) * var(--ratio))); max-height: calc(100dvh - 242px); }
+      .workspace-head { align-items: flex-start; }
+      .toolbar { max-width: 52%; overflow-x: auto; justify-content: flex-start; padding-bottom: 4px; scrollbar-width: none; }
+      .toolbar::-webkit-scrollbar { display: none; }
+      .tool-btn { flex: 0 0 44px; }
+      .field, select { font-size: 16px; }
+    }
+
+    @media (max-width: 560px) {
+      .brand p { display: none; }
+      .brand h1 { font-size: 16px; }
+      .top-actions { gap: 6px; }
+      .ghost-light { min-height: 44px; padding: 7px 9px; font-size: 11px; }
+      .workspace-head { min-height: 58px; padding: 8px 10px; }
+      .file-title { max-width: 42%; }
+      .file-title span { display: none; }
+      .stage-area { padding: 8px; }
+      .workspace-foot { grid-template-columns: auto minmax(80px,1fr) 42px; min-height: 58px; padding: 8px 10px; }
+      .pixel-button { grid-column: 1 / -1; min-height: 40px; }
+      .empty-state { inset: 58px 0 0; padding: 20px; }
+      .empty-card h3 { font-size: 19px; }
+      .right-panel { top: 72px; right: 8px; height: calc(100dvh - 80px); width: calc(100vw - 16px); }
+      .preflight-grid { grid-template-columns: 1fr; }
+      .dialog-actions { flex-direction: column-reverse; }
+      .dialog-actions button { width: 100%; }
+      .batch-actions { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#mainWorkspace">跳到编辑画布</a>
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">
@@ -424,41 +785,48 @@
       </div>
       <div>
         <h1>PConline 封面快裁</h1>
-        <p>首页实测规格 · 拖拽构图 · 原像素导出</p>
+        <p>专业编辑工作台 · 多规格输出 · 全程本地处理</p>
       </div>
     </div>
     <div class="top-actions">
-      <span class="privacy-pill">● 纯本地处理，图片不上传</span>
+      <span class="privacy-pill"><span class="status-dot" aria-hidden="true"></span> 图片不上传</span>
       <button class="ghost-light" id="auditBtn">规格依据</button>
-      <button class="ghost-light mobile-settings" id="settingsBtn">导出设置</button>
+      <button class="ghost-light mobile-queue" id="queueBtn" aria-expanded="false" aria-controls="queuePanel">素材</button>
+      <button class="ghost-light mobile-settings" id="settingsBtn" aria-expanded="false" aria-controls="settingsPanel">导出设置</button>
     </div>
   </header>
 
   <main class="app">
-    <aside class="panel left-panel">
-      <div class="panel-head">
-        <p class="eyebrow">Images</p>
-        <h2>图片队列 <span class="subtle" id="queueCount">0</span></h2>
+    <aside class="panel left-panel" id="queuePanel">
+      <div class="panel-head panel-head-row">
+        <div>
+          <p class="eyebrow">Library</p>
+          <h2>素材队列 <span class="count-badge" id="queueCount">0</span></h2>
+        </div>
+        <button class="drawer-close" id="closeQueue" aria-label="关闭素材面板">×</button>
       </div>
-      <div class="add-zone" id="addZone" role="button" tabindex="0">
-        <strong>＋ 添加图片</strong>
+      <button class="add-zone" id="addZone" type="button">
+        <strong>添加图片</strong>
         <span>可多选、拖入或直接粘贴</span>
-      </div>
+      </button>
       <div class="asset-list" id="assetList"></div>
+      <div class="queue-foot"><span>本次会话</span><strong id="queueFootCount">0 张素材</strong></div>
     </aside>
 
-    <section class="panel workspace">
+    <section class="panel workspace" id="mainWorkspace" tabindex="-1">
       <div class="workspace-head">
         <div class="file-title">
           <strong id="currentName">尚未选择图片</strong>
           <span id="currentMeta">支持 JPG / PNG / WebP / GIF 静态帧</span>
         </div>
         <div class="toolbar">
+          <button class="tool-btn" id="undoBtn" title="撤销（Ctrl+Z）" aria-label="撤销" disabled><svg viewBox="0 0 24 24"><path d="M9 8 4 12l5 4"/><path d="M5 12h8a6 6 0 0 1 6 6"/></svg><span class="sr-only">撤销</span></button>
+          <button class="tool-btn" id="redoBtn" title="重做（Ctrl+Shift+Z）" aria-label="重做" disabled><svg viewBox="0 0 24 24"><path d="m15 8 5 4-5 4"/><path d="M19 12h-8a6 6 0 0 0-6 6"/></svg><span class="sr-only">重做</span></button>
           <button class="tool-btn" id="rotateLeft" title="向左旋转（R）" aria-label="向左旋转"><svg viewBox="0 0 24 24"><path d="M4 8V4m0 0h4M4 4l4.2 4.2a7 7 0 1 1-1.7 7.1"/></svg><span class="sr-only">向左旋转</span></button>
           <button class="tool-btn" id="rotateRight" title="向右旋转（Shift+R）" aria-label="向右旋转"><svg viewBox="0 0 24 24"><path d="M20 8V4m0 0h-4m4-0-4.2 4.2a7 7 0 1 0 1.7 7.1"/></svg><span class="sr-only">向右旋转</span></button>
           <button class="tool-btn" id="flipX" title="水平翻转" aria-label="水平翻转"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 8l-3 4 3 4m16-8 3 4-3 4M1 12h7m8 0h7"/></svg><span class="sr-only">水平翻转</span></button>
-          <button class="tool-btn" id="gridBtn" title="三分线" aria-label="三分线"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18m6-18v18M3 9h18M3 15h18"/></svg><span class="sr-only">三分线</span></button>
-          <button class="tool-btn" id="safeBtn" title="安全区" aria-label="安全区"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg><span class="sr-only">安全区</span></button>
+          <button class="tool-btn" id="gridBtn" title="三分线" aria-label="三分线" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18m6-18v18M3 9h18M3 15h18"/></svg><span class="sr-only">三分线</span></button>
+          <button class="tool-btn" id="safeBtn" title="安全区" aria-label="安全区" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="7" y="7" width="10" height="10" rx="2"/></svg><span class="sr-only">安全区</span></button>
           <button class="tool-btn" id="resetBtn" title="重置并居中" aria-label="重置并居中"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/></svg><span class="sr-only">重置并居中</span></button>
         </div>
       </div>
@@ -475,22 +843,26 @@
         <span class="zoom-label">缩放</span>
         <input id="zoomRange" type="range" min="100" max="400" value="100" step="1" aria-label="图片缩放">
         <span class="zoom-number" id="zoomNumber">100%</span>
+        <button class="pixel-button" id="pixelInspectBtn" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3m0 8v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M9 9h6v6H9z"/></svg>1:1 像素检查</button>
       </div>
 
       <div class="empty-state" id="emptyState">
         <div class="empty-card">
-          <div class="empty-icon">▧</div>
-          <h3>把原图拖进来，立刻开始裁切</h3>
-          <p>已内置 PConline 首页焦点、资讯卡片、视频与专题位规格。所有处理都在当前浏览器完成。</p>
+          <div class="empty-icon"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="6" width="22" height="20" rx="4"/><circle cx="21" cy="12" r="2"/><path d="m8 23 6-7 5 5 3-3 3 4"/></svg></div>
+          <h3>把原图放进来，开始专业快裁</h3>
+          <p>一次完成官网规格、构图检查、清晰度诊断与批量交付。图片始终留在当前浏览器。</p>
           <button class="primary" id="emptyAddBtn">选择图片</button>
         </div>
       </div>
     </section>
 
-    <aside class="panel right-panel">
-      <div class="panel-head">
-        <p class="eyebrow">Crop & Export</p>
-        <h2>规格与导出</h2>
+    <aside class="panel right-panel" id="settingsPanel">
+      <div class="panel-head panel-head-row">
+        <div>
+          <p class="eyebrow">Inspector</p>
+          <h2>规格与交付</h2>
+        </div>
+        <button class="drawer-close" id="closeSettings" aria-label="关闭导出面板">×</button>
       </div>
       <div class="right-scroll">
         <section class="section">
@@ -513,8 +885,31 @@
             <span>仅预览，不会导出</span>
           </div>
           <div class="toggle-row">
-            <button class="toggle" id="gridToggle">三分线</button>
-            <button class="toggle" id="safeToggle">7% 安全区</button>
+            <button class="toggle" id="gridToggle" aria-pressed="false">三分线</button>
+            <button class="toggle" id="safeToggle" aria-pressed="false">7% 安全区</button>
+          </div>
+          <div class="position-head"><span>快速定位</span><span>按可见区域对齐</span></div>
+          <div class="position-grid" id="positionGrid" role="group" aria-label="九宫格快速定位">
+            <button type="button" data-row="top" data-col="left" aria-label="定位到左上"><span></span></button>
+            <button type="button" data-row="top" data-col="center" aria-label="定位到顶部居中"><span></span></button>
+            <button type="button" data-row="top" data-col="right" aria-label="定位到右上"><span></span></button>
+            <button type="button" data-row="center" data-col="left" aria-label="定位到左侧居中"><span></span></button>
+            <button type="button" data-row="center" data-col="center" aria-label="定位到画面中心"><span></span></button>
+            <button type="button" data-row="center" data-col="right" aria-label="定位到右侧居中"><span></span></button>
+            <button type="button" data-row="bottom" data-col="left" aria-label="定位到左下"><span></span></button>
+            <button type="button" data-row="bottom" data-col="center" aria-label="定位到底部居中"><span></span></button>
+            <button type="button" data-row="bottom" data-col="right" aria-label="定位到右下"><span></span></button>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">
+            <h3>清晰度诊断</h3>
+            <span id="qualityFactor">等待原图</span>
+          </div>
+          <div class="quality-insight" id="qualityInsight" data-state="idle">
+            <div class="quality-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 7 3v5c0 4.6-2.9 8.3-7 10-4.1-1.7-7-5.4-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+            <div><strong id="qualityStatus">上传图片后自动评估</strong><span id="qualityDetail">根据原图、裁切缩放与导出倍率判断</span></div>
           </div>
         </section>
 
@@ -543,7 +938,7 @@
           </div>
           <div class="quality-wrap" id="qualityWrap">
             <div class="quality-head"><span>画质</span><strong id="qualityNumber">92%</strong></div>
-            <input id="qualityRange" type="range" min="60" max="100" value="92" step="1">
+            <input id="qualityRange" type="range" min="60" max="100" value="92" step="1" aria-label="导出画质">
           </div>
           <div class="scale-wrap">
             <div class="quality-head"><span>导出倍率</span><strong id="scaleNumber">100%</strong></div>
@@ -561,19 +956,6 @@
           </div>
           <p class="limit-hint" id="limitHint">开启后自动寻找合适画质，像素尺寸保持不变。</p>
 
-          <div class="output-card">
-            <div>
-              <strong id="outputName">首页主焦点</strong>
-              <span id="outputRatio">约 2.14:1</span>
-            </div>
-            <div class="size-badge" id="outputSize">696 × 325</div>
-          </div>
-
-          <div class="export-stack">
-            <button class="primary" id="downloadCurrent" disabled>下载当前裁图</button>
-            <button class="secondary" id="downloadPresetZip" disabled>当前图片 · 全部官网规格 ZIP</button>
-            <button class="secondary" id="downloadQueueZip" disabled>全部图片 · 当前规格 ZIP</button>
-          </div>
         </section>
 
         <section class="section">
@@ -586,15 +968,38 @@
           </ul>
         </section>
       </div>
+      <div class="right-dock">
+        <div class="output-card">
+          <div>
+            <strong id="outputName">首页主焦点</strong>
+            <span id="outputRatio">约 2.14:1</span>
+          </div>
+          <div class="size-badge" id="outputSize">696 × 325</div>
+        </div>
+        <div class="export-progress" id="exportProgress" hidden>
+          <div><span id="exportProgressLabel">正在生成</span><strong id="exportProgressValue">0%</strong></div>
+          <div class="progress-track"><span id="exportProgressBar"></span></div>
+        </div>
+        <div class="export-stack">
+          <button class="secondary preflight-button" id="preflightBtn" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="m15 18 2 2 4-5"/></svg>全规格预检</button>
+          <button class="primary" id="downloadCurrent" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>下载当前裁图</button>
+          <div class="batch-actions">
+            <button class="secondary" id="downloadPresetZip" disabled>当前图 · 全规格</button>
+            <button class="secondary" id="downloadQueueZip" disabled>全部图 · 当前规格</button>
+          </div>
+        </div>
+      </div>
     </aside>
   </main>
 
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
   <input id="fileInput" type="file" accept="image/*" multiple hidden>
 
-  <dialog id="auditDialog">
+  <dialog id="auditDialog" aria-labelledby="auditTitle">
     <div class="dialog-head">
       <div>
-        <h2>官网封面规格依据</h2>
+        <h2 id="auditTitle">官网封面规格依据</h2>
         <p>来自太平洋科技首页可见图片的原图、HTML 尺寸与实际渲染尺寸交叉检查</p>
       </div>
       <button class="icon-close" id="closeAudit" aria-label="关闭">×</button>
@@ -610,6 +1015,35 @@
       </tbody>
     </table>
     <p class="audit-note">广告横幅、Logo、二维码和商品方图未计入“新闻封面”。页面本身使用 <code>object-fit: cover</code>，所以本工具默认采用铺满裁切，并允许每个版位单独微调主体位置。</p>
+  </dialog>
+
+  <dialog class="wide-dialog" id="preflightDialog" aria-labelledby="preflightTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Delivery check</p>
+        <h2 id="preflightTitle">全规格交付预检</h2>
+        <p id="preflightSummary">逐项确认构图与清晰度，再进行批量导出。</p>
+      </div>
+      <button class="icon-close" id="closePreflight" aria-label="关闭预检">×</button>
+    </div>
+    <div class="preflight-grid" id="preflightGrid"></div>
+    <div class="dialog-actions">
+      <button class="secondary" id="preflightCloseAction">继续调整</button>
+      <button class="primary" id="preflightExport" disabled>确认并导出全部规格</button>
+    </div>
+  </dialog>
+
+  <dialog class="pixel-dialog" id="pixelDialog" aria-labelledby="pixelTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Actual pixels</p>
+        <h2 id="pixelTitle">1:1 像素检查</h2>
+        <p id="pixelMeta">按实际导出像素显示，可滚动查看细节。</p>
+      </div>
+      <button class="icon-close" id="closePixel" aria-label="关闭像素检查">×</button>
+    </div>
+    <div class="pixel-viewer" id="pixelViewer"><canvas id="pixelCanvas"></canvas></div>
+    <div class="pixel-foot"><span>提示：此视图不缩放画面，屏幕上的 1 像素对应导出的 1 像素。</span></div>
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -632,6 +1066,12 @@
       const canvas = $('cropCanvas');
       const ctx = canvas.getContext('2d', { alpha: false });
       const fileInput = $('fileInput');
+      const stageShell = $('stageShell');
+      const MAX_EXPORT_EDGE = 16384;
+      const MAX_EXPORT_PIXELS = 80_000_000;
+      const MAX_PREVIEW_EDGE = 4096;
+      const MAX_INSPECT_PIXELS = 32_000_000;
+      const MAX_HISTORY = 40;
       let items = [];
       let activeIndex = -1;
       let activePreset = PRESETS[0];
@@ -640,6 +1080,10 @@
       let busy = false;
       let toastTimer = 0;
       let outputScale = 1;
+      let wheelHistoryStart = null;
+      let wheelHistoryTimer = 0;
+      let zoomHistoryStart = null;
+      let exportProgressTimer = 0;
 
       const saved = (() => {
         try { return JSON.parse(localStorage.getItem('pconline-cropper-settings') || '{}'); }
@@ -682,6 +1126,69 @@
 
       function currentItem() { return items[activeIndex] || null; }
 
+      function cropSnapshot(crop) {
+        return {
+          zoom: crop.zoom,
+          x: crop.x,
+          y: crop.y,
+          rotation: crop.rotation,
+          flipX: crop.flipX,
+          flipY: crop.flipY
+        };
+      }
+
+      function cropsEqual(a, b) {
+        return a && b && a.zoom === b.zoom && a.x === b.x && a.y === b.y &&
+          a.rotation === b.rotation && a.flipX === b.flipX && a.flipY === b.flipY;
+      }
+
+      function historyFor(item, preset = activePreset) {
+        if (!item.histories) item.histories = new Map();
+        const key = presetKey(preset);
+        if (!item.histories.has(key)) item.histories.set(key, { undo: [], redo: [] });
+        return item.histories.get(key);
+      }
+
+      function commitHistory(before, item = currentItem(), preset = activePreset) {
+        if (!item || !before) return;
+        const after = cropSnapshot(cropFor(item, preset));
+        if (cropsEqual(before, after)) return;
+        const history = historyFor(item, preset);
+        history.undo.push(before);
+        if (history.undo.length > MAX_HISTORY) history.undo.shift();
+        history.redo.length = 0;
+        updateHistoryButtons();
+      }
+
+      function mutateCrop(mutator) {
+        const item = currentItem();
+        if (!item) return;
+        const crop = cropFor(item);
+        const before = cropSnapshot(crop);
+        mutator(crop, item);
+        render();
+        commitHistory(before, item);
+      }
+
+      function applyHistory(direction) {
+        const item = currentItem();
+        if (!item) return;
+        const history = historyFor(item);
+        const from = direction === 'undo' ? history.undo : history.redo;
+        const to = direction === 'undo' ? history.redo : history.undo;
+        if (!from.length) return;
+        to.push(cropSnapshot(cropFor(item)));
+        item.crops.set(presetKey(activePreset), from.pop());
+        render();
+      }
+
+      function updateHistoryButtons() {
+        const item = currentItem();
+        const history = item ? historyFor(item) : null;
+        $('undoBtn').disabled = !history?.undo.length;
+        $('redoBtn').disabled = !history?.redo.length;
+      }
+
       function clampCrop(item, preset, crop) {
         const quarterTurns = ((crop.rotation % 360) + 360) % 360;
         const swapped = quarterTurns === 90 || quarterTurns === 270;
@@ -694,6 +1201,84 @@
         crop.x = Math.max(-maxX, Math.min(maxX, crop.x));
         crop.y = Math.max(-maxY, Math.min(maxY, crop.y));
         return { scale, maxX, maxY };
+      }
+
+      function outputDimensions(preset = activePreset, scale = outputScale) {
+        return { width: Math.round(preset.w * scale), height: Math.round(preset.h * scale) };
+      }
+
+      function validateOutputSize(preset = activePreset, scale = outputScale) {
+        const { width, height } = outputDimensions(preset, scale);
+        if (width > MAX_EXPORT_EDGE || height > MAX_EXPORT_EDGE) {
+          return `单边不能超过 ${MAX_EXPORT_EDGE.toLocaleString()} 像素`;
+        }
+        if (width * height > MAX_EXPORT_PIXELS) {
+          return `总像素不能超过 ${(MAX_EXPORT_PIXELS / 1_000_000).toFixed(0)} MP`;
+        }
+        return '';
+      }
+
+      function qualityReport(item, preset = activePreset, scale = outputScale, crop = cropFor(item, preset)) {
+        const normalized = ((crop.rotation % 360) + 360) % 360;
+        const swapped = normalized === 90 || normalized === 270;
+        const sourceW = swapped ? item.img.naturalHeight : item.img.naturalWidth;
+        const sourceH = swapped ? item.img.naturalWidth : item.img.naturalHeight;
+        const baseScale = Math.max(preset.w / sourceW, preset.h / sourceH) * crop.zoom;
+        const effectiveScale = baseScale * scale;
+        const recommended = Math.max(1, Math.min(3, Math.floor((1 / baseScale) + 1e-6)));
+        const outputError = validateOutputSize(preset, scale);
+        if (outputError) return { state: 'bad', effectiveScale, recommended, title: '输出尺寸超出安全范围', detail: `${outputError}，请降低尺寸或倍率。` };
+        if (effectiveScale <= 1) {
+          return {
+            state: 'good', effectiveScale, recommended,
+            title: '原图清晰度充足',
+            detail: `当前为缩小采样，建议最高使用 ${recommended * 100}% 倍率。`
+          };
+        }
+        if (effectiveScale <= 1.25) {
+          return {
+            state: 'warn', effectiveScale, recommended,
+            title: '存在轻度插值放大',
+            detail: `输出约放大 ${effectiveScale.toFixed(2)}×，细节提升有限，建议检查 1:1 视图。`
+          };
+        }
+        return {
+          state: 'bad', effectiveScale, recommended,
+          title: '存在明显插值放大',
+          detail: `输出约放大 ${effectiveScale.toFixed(2)}×，增加像素不会恢复原图缺失的细节。`
+        };
+      }
+
+      function renderQualityStatus(item) {
+        const card = $('qualityInsight');
+        if (!item) {
+          card.dataset.state = 'idle';
+          $('qualityStatus').textContent = '上传图片后自动评估';
+          $('qualityDetail').textContent = '根据原图、裁切缩放与导出倍率判断';
+          $('qualityFactor').textContent = '等待原图';
+          return;
+        }
+        const report = qualityReport(item);
+        card.dataset.state = report.state;
+        $('qualityStatus').textContent = report.title;
+        $('qualityDetail').textContent = report.detail;
+        $('qualityFactor').textContent = report.effectiveScale <= 1
+          ? `采样 ${(report.effectiveScale * 100).toFixed(0)}%`
+          : `放大 ${report.effectiveScale.toFixed(2)}×`;
+        document.querySelectorAll('.scale-option').forEach(option => {
+          const candidate = qualityReport(item, activePreset, Number(option.dataset.scale));
+          option.title = candidate.title;
+          option.dataset.quality = candidate.state;
+        });
+      }
+
+      function previewScaleFor(preset = activePreset) {
+        const rect = stageShell.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const screenScale = rect.width > 0 ? (rect.width * dpr) / preset.w : 1;
+        const edgeScale = MAX_PREVIEW_EDGE / Math.max(preset.w, preset.h);
+        const pixelScale = Math.sqrt(12_000_000 / (preset.w * preset.h));
+        return Math.max(.02, Math.min(outputScale, screenScale, edgeScale, pixelScale));
       }
 
       function drawTo(targetCtx, targetCanvas, item, preset, crop, exportScale = 1) {
@@ -724,35 +1309,38 @@
       function render() {
         const item = currentItem();
         const ratio = activePreset.w / activePreset.h;
-        $('stageShell').style.setProperty('--ratio', ratio);
+        stageShell.style.setProperty('--ratio', ratio);
         $('outputName').textContent = activePreset.name;
         $('outputRatio').textContent = activePreset.ratio || ratioText(activePreset.w, activePreset.h);
         $('outputSize').textContent = `${activePreset.w * outputScale} × ${activePreset.h * outputScale}`;
         document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.id === activePreset.id));
+        renderQualityStatus(item);
+        updateHistoryButtons();
 
         if (!item) {
-          canvas.width = activePreset.w * outputScale;
-          canvas.height = activePreset.h * outputScale;
+          const previewScale = previewScaleFor();
+          canvas.width = Math.max(1, Math.round(activePreset.w * previewScale));
+          canvas.height = Math.max(1, Math.round(activePreset.h * previewScale));
           ctx.fillStyle = '#0b1115';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           return;
         }
 
         const crop = cropFor(item);
-        // Render the preview at the selected export resolution, then let CSS scale it
-        // down to the stage size. This keeps the crop geometry unchanged while making
-        // 200%/300% previews use a genuinely higher-resolution backing canvas.
-        drawTo(ctx, canvas, item, activePreset, crop, outputScale);
+        // The preview reflects the selected export resolution but is capped to the
+        // display's useful pixel density. Full-size pixels remain available in 1:1 view.
+        drawTo(ctx, canvas, item, activePreset, crop, previewScaleFor());
         $('zoomRange').value = Math.round(crop.zoom * 100);
         $('zoomNumber').textContent = Math.round(crop.zoom * 100) + '%';
         $('flipX').classList.toggle('active', crop.flipX);
         $('currentName').textContent = item.name;
-        $('currentMeta').textContent = `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight}  ·  输出 ${activePreset.w * outputScale} × ${activePreset.h * outputScale}`;
+        const output = outputDimensions();
+        $('currentMeta').textContent = `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight}  ·  输出 ${output.width} × ${output.height}`;
       }
 
       function buildPresetGrid() {
         $('presetGrid').innerHTML = PRESETS.map(p => `
-          <button class="preset${p.id === activePreset.id ? ' active' : ''}" data-id="${p.id}">
+          <button type="button" class="preset${p.id === activePreset.id ? ' active' : ''}" data-id="${p.id}" aria-pressed="${p.id === activePreset.id}">
             <strong>${p.name}</strong>
             <span>${p.w} × ${p.h}</span>
             <span class="ratio-tag">${p.ratio}</span>
@@ -760,6 +1348,7 @@
         document.querySelectorAll('.preset').forEach(btn => {
           btn.addEventListener('click', () => {
             activePreset = PRESETS.find(p => p.id === btn.dataset.id);
+            document.querySelectorAll('.preset').forEach(option => option.setAttribute('aria-pressed', String(option.dataset.id === activePreset.id)));
             render();
           });
         });
@@ -767,13 +1356,14 @@
 
       function refreshAssets() {
         $('queueCount').textContent = items.length;
+        $('queueFootCount').textContent = `${items.length} 张素材`;
         $('assetList').innerHTML = '';
         items.forEach((item, index) => {
           const row = document.createElement('div');
           row.className = 'asset-row' + (index === activeIndex ? ' active' : '');
           row.innerHTML = `
-            <button class="asset-main" aria-label="编辑 ${escapeHtml(item.name)}">
-              <img src="${item.url}" alt="">
+            <button class="asset-main" aria-label="编辑 ${escapeHtml(item.name)}" aria-current="${index === activeIndex ? 'true' : 'false'}">
+              <img src="${item.url}" alt="${escapeHtml(item.name)} 缩略图">
               <span>
                 <span class="asset-name">${escapeHtml(item.name)}</span>
                 <span class="asset-meta">${item.img.naturalWidth} × ${item.img.naturalHeight}</span>
@@ -841,15 +1431,21 @@
 
       function updateAvailability() {
         const disabled = !items.length || busy;
-        $('downloadCurrent').disabled = disabled;
+        const unsafeOutput = !!currentItem() && !!validateOutputSize();
+        $('downloadCurrent').disabled = disabled || unsafeOutput;
         $('downloadPresetZip').disabled = disabled;
-        $('downloadQueueZip').disabled = disabled;
+        $('downloadQueueZip').disabled = disabled || unsafeOutput;
+        $('preflightBtn').disabled = disabled;
+        $('preflightExport').disabled = disabled;
+        $('pixelInspectBtn').disabled = disabled || unsafeOutput;
+        document.querySelectorAll('.position-grid button').forEach(button => { button.disabled = disabled; });
       }
 
       function showToast(message, error = false) {
         clearTimeout(toastTimer);
         const el = $('toast');
         el.textContent = message;
+        el.setAttribute('role', error ? 'alert' : 'status');
         el.classList.toggle('error', error);
         el.classList.add('show');
         toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
@@ -876,7 +1472,8 @@
       canvas.addEventListener('pointerdown', e => {
         if (!currentItem()) return;
         canvas.setPointerCapture(e.pointerId);
-        pointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        const item = currentItem();
+        pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, before: cropSnapshot(cropFor(item)), item, preset: activePreset };
         canvas.classList.add('dragging');
       });
       canvas.addEventListener('pointermove', e => {
@@ -889,49 +1486,82 @@
         pointer.x = e.clientX; pointer.y = e.clientY;
         render();
       });
-      const endPointer = () => { pointer = null; canvas.classList.remove('dragging'); };
+      const endPointer = () => {
+        if (pointer) commitHistory(pointer.before, pointer.item, pointer.preset);
+        pointer = null;
+        canvas.classList.remove('dragging');
+      };
       canvas.addEventListener('pointerup', endPointer);
       canvas.addEventListener('pointercancel', endPointer);
       canvas.addEventListener('wheel', e => {
         if (!currentItem()) return;
         e.preventDefault();
-        const crop = cropFor(currentItem());
+        const item = currentItem();
+        const crop = cropFor(item);
+        if (!wheelHistoryStart) wheelHistoryStart = { before: cropSnapshot(crop), item, preset: activePreset };
         crop.zoom = Math.max(1, Math.min(4, crop.zoom * (e.deltaY < 0 ? 1.045 : .957)));
         render();
+        clearTimeout(wheelHistoryTimer);
+        wheelHistoryTimer = setTimeout(() => {
+          if (wheelHistoryStart) commitHistory(wheelHistoryStart.before, wheelHistoryStart.item, wheelHistoryStart.preset);
+          wheelHistoryStart = null;
+        }, 180);
       }, { passive: false });
 
+      $('zoomRange').addEventListener('pointerdown', () => {
+        const item = currentItem();
+        if (item) zoomHistoryStart = { before: cropSnapshot(cropFor(item)), item, preset: activePreset };
+      });
+      $('zoomRange').addEventListener('keydown', () => {
+        const item = currentItem();
+        if (item && !zoomHistoryStart) zoomHistoryStart = { before: cropSnapshot(cropFor(item)), item, preset: activePreset };
+      });
       $('zoomRange').addEventListener('input', e => {
         if (!currentItem()) return;
         cropFor(currentItem()).zoom = Number(e.target.value) / 100;
         render();
       });
+      $('zoomRange').addEventListener('change', () => {
+        if (zoomHistoryStart) commitHistory(zoomHistoryStart.before, zoomHistoryStart.item, zoomHistoryStart.preset);
+        zoomHistoryStart = null;
+      });
 
       function rotate(degrees) {
-        const item = currentItem(); if (!item) return;
-        const crop = cropFor(item);
-        crop.rotation = (crop.rotation + degrees + 360) % 360;
-        crop.x = crop.y = 0;
-        render();
+        mutateCrop(crop => {
+          crop.rotation = (crop.rotation + degrees + 360) % 360;
+          crop.x = crop.y = 0;
+        });
       }
       $('rotateLeft').addEventListener('click', () => rotate(-90));
       $('rotateRight').addEventListener('click', () => rotate(90));
       $('flipX').addEventListener('click', () => {
-        const item = currentItem(); if (!item) return;
-        const crop = cropFor(item); crop.flipX = !crop.flipX; render();
+        mutateCrop(crop => { crop.flipX = !crop.flipX; });
       });
       $('resetBtn').addEventListener('click', () => {
-        const item = currentItem(); if (!item) return;
-        item.crops.set(presetKey(activePreset), { zoom: 1, x: 0, y: 0, rotation: 0, flipX: false, flipY: false });
-        render();
+        mutateCrop(crop => Object.assign(crop, { zoom: 1, x: 0, y: 0, rotation: 0, flipX: false, flipY: false }));
       });
+      $('undoBtn').addEventListener('click', () => applyHistory('undo'));
+      $('redoBtn').addEventListener('click', () => applyHistory('redo'));
+
+      document.querySelectorAll('.position-grid button').forEach(button => button.addEventListener('click', () => {
+        mutateCrop((crop, item) => {
+          const { maxX, maxY } = clampCrop(item, activePreset, crop);
+          crop.x = button.dataset.col === 'left' ? maxX : button.dataset.col === 'right' ? -maxX : 0;
+          crop.y = button.dataset.row === 'top' ? maxY : button.dataset.row === 'bottom' ? -maxY : 0;
+        });
+      }));
 
       function toggleGuide(type) {
         const grid = type === 'grid';
         const overlay = grid ? $('gridOverlay') : $('safeBox');
         const show = !overlay.classList.contains('show');
         overlay.classList.toggle('show', show);
-        (grid ? $('gridBtn') : $('safeBtn')).classList.toggle('active', show);
-        (grid ? $('gridToggle') : $('safeToggle')).classList.toggle('active', show);
+        const toolbarButton = grid ? $('gridBtn') : $('safeBtn');
+        const panelButton = grid ? $('gridToggle') : $('safeToggle');
+        toolbarButton.classList.toggle('active', show);
+        panelButton.classList.toggle('active', show);
+        toolbarButton.setAttribute('aria-pressed', String(show));
+        panelButton.setAttribute('aria-pressed', String(show));
       }
       $('gridBtn').addEventListener('click', () => toggleGuide('grid'));
       $('gridToggle').addEventListener('click', () => toggleGuide('grid'));
@@ -946,6 +1576,7 @@
         }
         activePreset = { id: `custom-${++customSerial}`, name: '自定义规格', w, h, ratio: ratioText(w, h) };
         render();
+        updateAvailability();
         showToast(`已应用 ${w} × ${h}`);
       });
 
@@ -975,6 +1606,7 @@
           $('scaleNumber').textContent = `${outputScale * 100}%`;
           persistSettings();
           render();
+          updateAvailability();
         });
       });
       $('scaleNumber').textContent = `${outputScale * 100}%`;
@@ -1005,6 +1637,8 @@
       }
 
       async function canvasBlob(item, preset) {
+        const outputError = validateOutputSize(preset);
+        if (outputError) throw new Error(`无法导出：${outputError}`);
         const out = document.createElement('canvas');
         const outCtx = out.getContext('2d', { alpha: false });
         drawTo(outCtx, out, item, preset, cropFor(item, preset), outputScale);
@@ -1042,6 +1676,81 @@
         return { blob, qualityUsed, metLimit };
       }
 
+      function cropWasAdjusted(crop) {
+        return Math.abs(crop.zoom - 1) > .001 || Math.abs(crop.x) > .01 || Math.abs(crop.y) > .01 ||
+          crop.rotation !== 0 || crop.flipX || crop.flipY;
+      }
+
+      function buildPreflight() {
+        const item = currentItem();
+        if (!item) return;
+        const grid = $('preflightGrid');
+        grid.innerHTML = '';
+        let adjustedCount = 0;
+        let warningCount = 0;
+        PRESETS.forEach(preset => {
+          const crop = cropFor(item, preset);
+          const adjusted = cropWasAdjusted(crop);
+          const report = qualityReport(item, preset);
+          if (adjusted) adjustedCount++;
+          if (report.state !== 'good') warningCount++;
+
+          const card = document.createElement('article');
+          card.className = 'preflight-card';
+          const preview = document.createElement('div');
+          preview.className = 'preflight-preview';
+          const thumb = document.createElement('canvas');
+          thumb.setAttribute('aria-label', `${preset.name} 裁切预览`);
+          const thumbScale = Math.min(1, 300 / preset.w, 170 / preset.h);
+          drawTo(thumb.getContext('2d', { alpha: false }), thumb, item, preset, crop, thumbScale);
+          preview.appendChild(thumb);
+
+          const info = document.createElement('div');
+          info.className = 'preflight-info';
+          const output = outputDimensions(preset);
+          info.innerHTML = `
+            <div><strong>${preset.name}</strong><span class="preflight-status ${report.state}">${report.title}</span></div>
+            <p>${output.width} × ${output.height} · ${adjusted ? '已调整构图' : '默认居中构图'}</p>
+            <button class="preflight-edit" type="button">编辑此规格</button>`;
+          info.querySelector('button').addEventListener('click', () => {
+            activePreset = preset;
+            $('preflightDialog').close();
+            render();
+            updateAvailability();
+          });
+          card.append(preview, info);
+          grid.appendChild(card);
+        });
+        $('preflightSummary').textContent = `${PRESETS.length} 个官网规格 · ${adjustedCount} 个已调整 · ${warningCount} 个清晰度提醒`;
+      }
+
+      function openPixelInspector() {
+        const item = currentItem();
+        if (!item) return;
+        const output = outputDimensions();
+        if (output.width * output.height > MAX_INSPECT_PIXELS) {
+          return showToast('1:1 检查视图最高支持 32 MP，请降低尺寸或倍率', true);
+        }
+        const out = $('pixelCanvas');
+        drawTo(out.getContext('2d', { alpha: false }), out, item, activePreset, cropFor(item), outputScale);
+        $('pixelMeta').textContent = `${activePreset.name} · ${output.width} × ${output.height} · 按实际导出像素显示`;
+        $('pixelDialog').showModal();
+        $('pixelViewer').scrollTo({ left: 0, top: 0 });
+      }
+
+      $('preflightBtn').addEventListener('click', () => {
+        buildPreflight();
+        $('preflightDialog').showModal();
+      });
+      $('closePreflight').addEventListener('click', () => $('preflightDialog').close());
+      $('preflightCloseAction').addEventListener('click', () => $('preflightDialog').close());
+      $('preflightExport').addEventListener('click', () => {
+        $('preflightDialog').close();
+        $('downloadPresetZip').click();
+      });
+      $('pixelInspectBtn').addEventListener('click', openPixelInspector);
+      $('closePixel').addEventListener('click', () => $('pixelDialog').close());
+
       function extensionForMime(mime) {
         return mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
       }
@@ -1060,17 +1769,33 @@
         return (bytes / 1024 / 1024).toFixed(2) + ' MB';
       }
 
+      function setExportProgress(label, current = 0, total = 1) {
+        clearTimeout(exportProgressTimer);
+        const progress = $('exportProgress');
+        const percent = Math.max(0, Math.min(100, Math.round((current / total) * 100)));
+        progress.hidden = false;
+        $('exportProgressLabel').textContent = label;
+        $('exportProgressValue').textContent = `${percent}%`;
+        $('exportProgressBar').style.width = `${percent}%`;
+      }
+
+      function finishExportProgress(label = '生成完成') {
+        setExportProgress(label, 1, 1);
+        exportProgressTimer = setTimeout(() => { $('exportProgress').hidden = true; }, 1800);
+      }
+
       async function withBusy(label, task) {
         if (busy) return;
-        busy = true; updateAvailability(); showToast(label);
-        try { await task(); }
-        catch (err) { showToast(err?.message || '导出失败', true); }
+        busy = true; updateAvailability(); showToast(label); setExportProgress(label, 0, 1);
+        try { await task(); finishExportProgress(); }
+        catch (err) { showToast(err?.message || '导出失败', true); finishExportProgress('生成失败'); }
         finally { busy = false; updateAvailability(); }
       }
 
       $('downloadCurrent').addEventListener('click', () => withBusy('正在生成图片…', async () => {
         const item = currentItem();
         const result = await canvasBlob(item, activePreset);
+        setExportProgress('当前裁图已生成', 1, 1);
         const ext = extensionForMime($('formatSelect').value);
         triggerDownload(result.blob, outputFileName(item, activePreset, ext));
         const qualityText = $('formatSelect').value === 'image/png' ? '' : ` · 画质 ${Math.round(result.qualityUsed * 100)}%`;
@@ -1084,8 +1809,10 @@
         const entries = [];
         for (let i = 0; i < PRESETS.length; i++) {
           showToast(`正在生成 ${i + 1}/${PRESETS.length}：${PRESETS[i].name}`);
+          setExportProgress(`正在生成：${PRESETS[i].name}`, i, PRESETS.length);
           const result = await canvasBlob(item, PRESETS[i]);
           entries.push({ name: outputFileName(item, PRESETS[i], ext), blob: result.blob });
+          setExportProgress(`已生成 ${i + 1}/${PRESETS.length}`, i + 1, PRESETS.length);
         }
         const zip = await makeZip(entries);
         triggerDownload(zip, `${safeName(item.name)}-PConline官网规格-${outputScale}x.zip`);
@@ -1097,8 +1824,10 @@
         const entries = [];
         for (let i = 0; i < items.length; i++) {
           showToast(`正在处理 ${i + 1}/${items.length}：${items[i].name}`);
+          setExportProgress(`正在处理：${items[i].name}`, i, items.length);
           const result = await canvasBlob(items[i], activePreset);
           entries.push({ name: outputFileName(items[i], activePreset, ext), blob: result.blob });
+          setExportProgress(`已处理 ${i + 1}/${items.length}`, i + 1, items.length);
         }
         const zip = await makeZip(entries);
         triggerDownload(zip, `PConline-${safeName(activePreset.name)}-${activePreset.w * outputScale}x${activePreset.h * outputScale}.zip`);
@@ -1182,22 +1911,31 @@
       }
 
       window.addEventListener('keydown', e => {
+        const editingControl = e.target.matches('input, select, textarea, button, [contenteditable="true"]');
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
           e.preventDefault(); if (!$('downloadCurrent').disabled) $('downloadCurrent').click(); return;
         }
-        if (e.target.matches('input, select')) return;
+        if (!editingControl && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+          e.preventDefault(); applyHistory(e.shiftKey ? 'redo' : 'undo'); return;
+        }
+        if (!editingControl && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+          e.preventDefault(); applyHistory('redo'); return;
+        }
+        if (editingControl || document.querySelector('dialog[open]')) return;
         const item = currentItem(); if (!item) return;
         if (e.key.toLowerCase() === 'r') { e.preventDefault(); rotate(e.shiftKey ? 90 : -90); return; }
         const delta = e.shiftKey ? 10 : 1;
-        const crop = cropFor(item);
-        if (e.key === 'ArrowLeft') crop.x -= delta;
-        else if (e.key === 'ArrowRight') crop.x += delta;
-        else if (e.key === 'ArrowUp') crop.y -= delta;
-        else if (e.key === 'ArrowDown') crop.y += delta;
-        else if (e.key === '+' || e.key === '=') crop.zoom = Math.min(4, crop.zoom + .02);
-        else if (e.key === '-') crop.zoom = Math.max(1, crop.zoom - .02);
-        else return;
-        e.preventDefault(); render();
+        const key = e.key;
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-'].includes(key)) return;
+        e.preventDefault();
+        mutateCrop(crop => {
+          if (key === 'ArrowLeft') crop.x -= delta;
+          else if (key === 'ArrowRight') crop.x += delta;
+          else if (key === 'ArrowUp') crop.y -= delta;
+          else if (key === 'ArrowDown') crop.y += delta;
+          else if (key === '+' || key === '=') crop.zoom = Math.min(4, crop.zoom + .02);
+          else if (key === '-') crop.zoom = Math.max(1, crop.zoom - .02);
+        });
       });
 
       $('auditBtn').addEventListener('click', () => $('auditDialog').showModal());
@@ -1206,7 +1944,39 @@
         const r = e.currentTarget.getBoundingClientRect();
         if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.currentTarget.close();
       });
-      $('settingsBtn').addEventListener('click', () => document.body.classList.toggle('settings-open'));
+      ['preflightDialog', 'pixelDialog'].forEach(id => $(id).addEventListener('click', e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) e.currentTarget.close();
+      }));
+
+      function closeDrawers() {
+        document.body.classList.remove('settings-open', 'queue-open');
+        $('settingsBtn').setAttribute('aria-expanded', 'false');
+        $('queueBtn').setAttribute('aria-expanded', 'false');
+      }
+
+      $('settingsBtn').addEventListener('click', () => {
+        const open = !document.body.classList.contains('settings-open');
+        closeDrawers();
+        document.body.classList.toggle('settings-open', open);
+        $('settingsBtn').setAttribute('aria-expanded', String(open));
+      });
+      $('queueBtn').addEventListener('click', () => {
+        const open = !document.body.classList.contains('queue-open');
+        closeDrawers();
+        document.body.classList.toggle('queue-open', open);
+        $('queueBtn').setAttribute('aria-expanded', String(open));
+      });
+      $('closeSettings').addEventListener('click', closeDrawers);
+      $('closeQueue').addEventListener('click', closeDrawers);
+      $('drawerBackdrop').addEventListener('click', closeDrawers);
+      window.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawers(); });
+
+      let resizeFrame = 0;
+      new ResizeObserver(() => {
+        cancelAnimationFrame(resizeFrame);
+        resizeFrame = requestAnimationFrame(render);
+      }).observe(stageShell);
 
       buildPresetGrid();
       refreshAssets();
