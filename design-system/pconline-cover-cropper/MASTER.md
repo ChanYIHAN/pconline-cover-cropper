@@ -6,7 +6,7 @@
 
 ---
 
-**Project:** PConline Cover Cropper
+**Project:** PConline 封面工作台
 **Generated:** 2026-08-10 18:24:36
 **Category:** Productivity Tool
 **Design Dials:** Variance 6/10 (Balanced / Modern) | Motion 4/10 (Standard) | Density 7/10 (Standard)
@@ -19,18 +19,18 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#0D9488` | `--color-primary` |
+| Primary | `#6366F1` | `--color-primary` |
 | On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#14B8A6` | `--color-secondary` |
-| Accent/CTA | `#EA580C` | `--color-accent` |
-| Background | `#F0FDFA` | `--color-background` |
-| Foreground | `#134E4A` | `--color-foreground` |
-| Muted | `#E8F1F4` | `--color-muted` |
-| Border | `#99F6E4` | `--color-border` |
+| Secondary | `#22D3EE` | `--color-secondary` |
+| Accent/CTA | `#F0523B` | `--color-accent` |
+| Background | `#0B1020` | `--color-background` |
+| Foreground | `#F4F5FF` | `--color-foreground` |
+| Muted | `#9CA7C7` | `--color-muted` |
+| Border | `#2A3555` | `--color-border` |
 | Destructive | `#DC2626` | `--color-destructive` |
-| Ring | `#0D9488` | `--color-ring` |
+| Ring | `#818CF8` | `--color-ring` |
 
-**Color Notes:** Teal focus + action orange [Accent adjusted from #F97316 for WCAG 3:1]
+**Color Notes:** Youthful indigo foundation, cyan informational highlights, and a warm coral delivery CTA. Dark navy surfaces preserve professional editing contrast without the previous teal-heavy cast.
 
 ### Typography
 
@@ -71,7 +71,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #EA580C;
+  background: #F0523B;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -88,8 +88,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #0D9488;
-  border: 2px solid #0D9488;
+  color: #818CF8;
+  border: 2px solid #818CF8;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -102,7 +102,7 @@
 
 ```css
 .card {
-  background: #F0FDFA;
+  background: #12182B;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -128,9 +128,9 @@
 }
 
 .input:focus {
-  border-color: #0D9488;
+  border-color: #818CF8;
   outline: none;
-  box-shadow: 0 0 0 3px #0D948820;
+  box-shadow: 0 0 0 3px #818CF833;
 }
 ```
 
@@ -156,9 +156,9 @@
 
 ## Style Guidelines
 
-**Style:** Modern Dark (Cinema Mobile)
+**Style:** Youthful Dark Creative Studio
 
-**Keywords:** dark mode, cinematic, ambient light, glassmorphism, deep black, indigo, glow, blur, atmospheric, reanimated, haptic, premium, layered, frosted glass, linear gradient
+**Keywords:** dark mode, youthful, creative productivity, indigo, cyan, coral, focused canvas, layered, precise, energetic
 
 **Best For:** Developer tools, pro productivity apps, fintech/trading dashboards, media/streaming platforms, AI tool interfaces, high-end gaming companion apps
 
@@ -173,6 +173,7 @@
 - **Desktop:** material queue, canvas, and inspector remain visible together
 - **Tablet/mobile:** library and inspector become labeled drawers with a backdrop and explicit close controls
 - **Progressive disclosure:** official presets and crop tools first; advanced compression, diagnostics, preflight, and batch actions remain grouped by task
+- **Initial image state:** every first upload opens in a full-image, uncropped original mode; official crop controls unlock only after a preset is chosen
 
 ---
 

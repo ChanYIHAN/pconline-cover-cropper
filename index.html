@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="面向 PConline 编辑场景的在线封面裁切工具，支持官网预设、画质控制、目标文件大小和批量导出。">
-  <title>PConline 封面快裁</title>
+  <title>PConline 封面工作台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%23087fc1'/%3E%3Cstop offset='1' stop-color='%2300d6c7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='2' y='2' width='44' height='44' rx='14' fill='url(%23g)'/%3E%3Cpath d='M14 11h-2a3 3 0 0 0-3 3v7m30 6v7a3 3 0 0 1-3 3h-7' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3Crect x='14' y='14' width='25' height='21' rx='6' fill='white' fill-opacity='.17' stroke='white' stroke-opacity='.55'/%3E%3Ccircle cx='31' cy='21' r='2.6' fill='%238dfff4'/%3E%3Cpath d='m17 31 6-7 5 5 3-3 5 5' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -700,6 +700,110 @@
     .toast.error { background: #4b1820; border-color: rgba(248,113,113,.25); }
     .drawer-backdrop { position: fixed; z-index: 35; inset: 64px 0 0; display: none; background: rgba(2,8,10,.58); backdrop-filter: blur(3px); }
 
+    .save-state {
+      min-height: 44px; display: inline-flex; align-items: center; gap: 7px; padding: 0 10px;
+      border: 1px solid var(--line); border-radius: 10px; color: #9cb6b2; background: rgba(255,255,255,.025); font-size: 11px;
+    }
+    .save-state::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #64748b; }
+    .save-state[data-state="saving"]::before { background: var(--warning); box-shadow: 0 0 0 4px rgba(245,158,11,.1); }
+    .save-state[data-state="saved"]::before { background: var(--success); box-shadow: 0 0 0 4px rgba(34,197,94,.1); }
+    .save-state[data-state="error"]::before { background: var(--danger); }
+
+    .focus-marker {
+      position: absolute; z-index: 4; left: 50%; top: 50%; width: 28px; height: 28px; pointer-events: none;
+      transform: translate(-50%,-50%); border: 2px solid #fff; border-radius: 50%; opacity: 0;
+      box-shadow: 0 0 0 3px rgba(20,184,166,.72), 0 6px 18px rgba(0,0,0,.35); transition: opacity .18s var(--ease);
+    }
+    .focus-marker::before, .focus-marker::after { content: ""; position: absolute; background: #fff; }
+    .focus-marker::before { width: 8px; height: 2px; left: 8px; top: 11px; }
+    .focus-marker::after { width: 2px; height: 8px; left: 11px; top: 8px; }
+    .focus-marker.show { opacity: 1; }
+    .stage-shell.anchor-mode { cursor: crosshair; box-shadow: 0 0 0 2px #2dd4bf, 0 26px 70px rgba(0,0,0,.48); }
+    .stage-shell.anchor-mode #cropCanvas { cursor: crosshair; }
+
+    .workflow-section { padding: 0; }
+    .inspector-group { border-top: 1px solid var(--line); }
+    .inspector-group > summary {
+      min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 0 2px; color: #e9f7f5; font-size: 13px; font-weight: 700; cursor: pointer; list-style: none;
+    }
+    .inspector-group > summary::-webkit-details-marker { display: none; }
+    .inspector-group > summary::after { content: "+"; color: #78928f; font-size: 18px; font-weight: 400; }
+    .inspector-group[open] > summary::after { content: "−"; color: #5eead4; }
+    .inspector-group > summary span { color: #78928f; font-size: 10px; font-weight: 500; }
+    .inspector-content { padding: 0 1px 16px; }
+    .mini-label { display: flex; justify-content: space-between; gap: 8px; margin: 10px 1px 6px; color: #89a3a0; font-size: 10px; }
+    .mini-label strong { color: #cfe3e0; font-variant-numeric: tabular-nums; }
+    .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .tool-grid.three { grid-template-columns: repeat(3,1fr); }
+    .tool-grid button { min-height: 44px; }
+    .compact-note { margin: 8px 1px 0; color: #718c89; font-size: 9px; line-height: 1.55; }
+    .anchor-status { margin-bottom: 9px; padding: 10px; border: 1px solid #294249; border-radius: 10px; background: #0b1b20; color: #89a3a0; font-size: 10px; }
+    .anchor-status strong { display: block; margin-bottom: 3px; color: #d8ebe8; font-size: 11px; }
+    .anchor-status.active { border-color: rgba(94,234,212,.32); background: rgba(20,184,166,.07); }
+
+    .adjustment-row { margin-top: 9px; }
+    .adjustment-row input[type="range"] { display: block; }
+    .adjustment-presets, .template-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 7px; }
+    .adjustment-presets button, .template-card {
+      min-height: 48px; padding: 8px; border: 1px solid #2b444b; border-radius: 10px; background: #102228; color: #c7dbd8;
+      text-align: left; font-size: 10px;
+    }
+    .adjustment-presets button strong, .template-card strong { display: block; color: #e8f7f5; font-size: 11px; }
+    .adjustment-presets button span, .template-card span { display: block; margin-top: 3px; color: #718c89; font-size: 9px; }
+    .adjustment-presets button:hover, .template-card:hover { border-color: rgba(94,234,212,.42); background: #163038; }
+
+    .layer-form { display: grid; gap: 8px; }
+    .layer-form label { min-width: 0; }
+    .layer-form .field { margin-top: 5px; }
+    .layer-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .color-field { display: grid; grid-template-columns: 44px 1fr; gap: 7px; align-items: center; }
+    .color-field input[type="color"] { width: 44px; height: 44px; padding: 4px; border: 1px solid #2b444b; border-radius: 10px; background: #0b1b20; }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; color: #a8bfbc; font-size: 11px; }
+    .switch-row input { width: 18px; height: 18px; accent-color: var(--brand); }
+
+    .review-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .version-chip { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; color: #5eead4; font-size: 9px; }
+    .version-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .asset-review { display: inline-flex; margin-left: 5px; padding: 2px 5px; border-radius: 999px; background: rgba(148,163,184,.1); color: #a8bfbc; font-size: 8px; }
+    .asset-review.approved { background: rgba(34,197,94,.11); color: #86efac; }
+    .asset-review.review { background: rgba(245,158,11,.1); color: #fcd34d; }
+
+    .lab-card { padding: 11px; border: 1px solid #294249; border-radius: 12px; background: #0b1b20; }
+    .lab-card + .lab-card { margin-top: 8px; }
+    .lab-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .lab-head strong { font-size: 11px; color: #e5f5f2; }
+    .lab-badge { padding: 3px 6px; border-radius: 999px; background: rgba(20,184,166,.1); color: #5eead4; font-size: 8px; }
+    .lab-badge.fallback { background: rgba(245,158,11,.1); color: #fcd34d; }
+    .lab-card p { margin: 6px 0 0; color: #718c89; font-size: 9px; line-height: 1.5; }
+
+    .dialog-body { max-height: calc(100dvh - 180px); overflow: auto; padding: 18px 22px; }
+    .dialog-section + .dialog-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .dialog-section h3 { margin: 0 0 9px; font-size: 13px; }
+    .project-hero { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; padding: 13px; border: 1px solid #294249; border-radius: 12px; background: #0b1b20; }
+    .project-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 11px; color: #5eead4; background: rgba(20,184,166,.1); }
+    .project-icon svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .project-hero strong { display: block; font-size: 12px; }
+    .project-hero span { display: block; margin-top: 4px; color: #78928f; font-size: 10px; }
+    .check-list { display: grid; gap: 8px; }
+    .check-list label { min-height: 40px; display: flex; align-items: center; gap: 9px; padding: 0 10px; border: 1px solid #294249; border-radius: 9px; background: #0b1b20; color: #bcd1ce; font-size: 11px; }
+    .check-list input { width: 17px; height: 17px; accent-color: var(--brand); }
+    .version-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .version-card { overflow: hidden; border: 1px solid #294249; border-radius: 12px; background: #0a181d; }
+    .version-card canvas { display: block; width: 100%; background: #061115; }
+    .version-card > span { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px; color: #d8ebe8; text-align: left; }
+    .version-card > span small { color: #78928f; }
+    .version-card:hover { border-color: #2dd4bf; background: #10262b; }
+    .version-card footer { padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .version-card strong { font-size: 11px; }
+    .version-card button { min-height: 38px; padding: 0 10px; border: 1px solid #2b444b; border-radius: 8px; background: #102228; color: #c7dbd8; font-size: 10px; }
+
+    @media (max-width: 560px) {
+      .save-state { display: none; }
+      .tool-grid.three, .version-grid { grid-template-columns: 1fr; }
+      .layer-inline { grid-template-columns: 1fr; }
+    }
+
     @media (max-width: 1180px) {
       .app { grid-template-columns: 252px minmax(380px,1fr); }
       .right-panel { position: fixed; z-index: 40; top: 76px; right: 12px; width: min(370px, calc(100vw - 24px)); height: calc(100dvh - 88px); transform: translateX(calc(100% + 24px)); transition: transform .24s var(--ease); }
@@ -751,6 +855,91 @@
       .batch-actions { grid-template-columns: 1fr; }
     }
 
+    /* Youthful studio palette — energetic indigo, clear cyan, warm coral CTA */
+    :root {
+      --bg: #0b1020;
+      --panel: #12182b;
+      --panel-raised: #18213a;
+      --panel-soft: #202a46;
+      --ink: #f4f5ff;
+      --muted: #9ca7c7;
+      --line: #2a3555;
+      --brand: #6366f1;
+      --brand-deep: #4f46e5;
+      --accent: #f0523b;
+      --accent-bright: #ff7657;
+      --shadow: 0 20px 55px rgba(2, 5, 20, .34);
+    }
+    body {
+      background:
+        radial-gradient(circle at 12% -10%, rgba(99,102,241,.24), transparent 34rem),
+        radial-gradient(circle at 92% 2%, rgba(34,211,238,.12), transparent 28rem),
+        radial-gradient(circle at 72% 110%, rgba(240,82,59,.07), transparent 30rem),
+        var(--bg);
+    }
+    button:focus-visible, input:focus-visible, select:focus-visible { outline-color: rgba(129,140,248,.58); }
+    .topbar { background: rgba(11,16,32,.86); border-bottom-color: rgba(129,140,248,.2); box-shadow: 0 12px 32px rgba(2,5,20,.28); }
+    .topbar::before { width: 4px; background: linear-gradient(#818cf8, #22d3ee, #ff7657); }
+    .brand p { color: #a8b2d1; }
+    .privacy-pill, .ghost-light, .save-state, .drawer-close { border-color: #303c61; background: rgba(255,255,255,.045); color: #d6dbf0; }
+    .ghost-light:hover { background: rgba(99,102,241,.16); border-color: rgba(129,140,248,.55); color: #fff; }
+    .panel { background: rgba(18,24,43,.96); border-color: #2b3657; }
+    .eyebrow, .ratio-tag, .small-secondary, .preflight-button, .version-chip, .lab-badge, .size-badge { color: #67e8f9 !important; }
+    .count-badge { color: #c7d2fe; background: rgba(99,102,241,.2); }
+    .add-zone { border-color: rgba(103,232,249,.36); background: linear-gradient(145deg, rgba(99,102,241,.14), rgba(34,211,238,.05)); }
+    .add-zone strong::before { background: linear-gradient(135deg, #818cf8, #22d3ee); color: #07111f; }
+    .add-zone:hover, body.dragging .add-zone { border-color: #67e8f9; background: rgba(99,102,241,.18); }
+    .asset-row.active { background: rgba(99,102,241,.16); border-color: rgba(129,140,248,.38); }
+    .asset-name, .queue-foot strong, .file-title strong { color: #f4f5ff; }
+    .workspace { background: #090e1d; border-color: #293454; }
+    .tool-btn, .pixel-button { background: #18213a; border-color: #303d62; color: #c4cbe4; }
+    .tool-btn:hover, .pixel-button:hover { background: #222d4b; border-color: #53628f; color: #fff; }
+    .tool-btn.active { color: #a5f3fc; border-color: rgba(103,232,249,.55); background: rgba(99,102,241,.2); }
+    .stage-area {
+      background:
+        linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%),
+        linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%),
+        radial-gradient(circle at 50% 45%, rgba(99,102,241,.14), transparent 46%);
+      background-size: 26px 26px, 26px 26px, auto;
+      background-position: 0 0, 13px 13px, 0 0;
+    }
+    .stage-shell { box-shadow: 0 28px 76px rgba(0,0,0,.5), 0 0 0 1px rgba(129,140,248,.16); }
+    .stage-shell.original-mode { box-shadow: 0 28px 76px rgba(0,0,0,.5), 0 0 0 1px rgba(103,232,249,.28), 0 0 42px rgba(99,102,241,.1); }
+    .empty-state { background: #090e1d; }
+    .empty-icon { color: #67e8f9; background: linear-gradient(145deg, rgba(99,102,241,.18), rgba(34,211,238,.08)); border-color: rgba(103,232,249,.28); }
+    .section-title h3, .inspector-group > summary, .dialog-head h2 { color: #f4f5ff; }
+    .preset { border-color: #303c60; background: #171f36; }
+    .preset:hover { border-color: rgba(103,232,249,.42); background: #202a46; }
+    .preset.active { border-color: #818cf8; background: rgba(99,102,241,.2); box-shadow: inset 0 0 0 1px rgba(129,140,248,.18), 0 8px 22px rgba(30,41,110,.16); }
+    .preset span, .section-title span, .label, .quality-head, .limit-hint, .tips, .compact-note { color: #8f9abb; }
+    .original-preset { grid-column: 1 / -1; min-height: 76px; background: linear-gradient(135deg, rgba(99,102,241,.19), rgba(34,211,238,.07)); }
+    .original-preset strong { display: flex; align-items: center; gap: 7px; }
+    .mode-badge { display: inline-flex !important; padding: 3px 6px; border-radius: 999px; color: #c7d2fe !important; background: rgba(99,102,241,.24); font-size: 8px !important; }
+    .preset-divider { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 4px 0 0; color: #7884a7; font-size: 9px; letter-spacing: .08em; }
+    .preset-divider::after { content: ""; flex: 1; height: 1px; background: #2a3555; }
+    .field, select, .size-limit, .quality-insight, .anchor-status, .lab-card, .project-hero, .check-list label { background: #10172a; border-color: #303c60; color: #f1f3ff; }
+    .small-secondary, .toggle, .scale-option, .secondary, .adjustment-presets button, .template-card, .preflight-edit { background: #18213a; border-color: #334166; color: #d8ddf1; }
+    .small-secondary:hover, .toggle:hover, .scale-option:hover, .secondary:hover, .adjustment-presets button:hover, .template-card:hover { background: #232e4e; border-color: #56668f; }
+    .toggle.active, .scale-option.active { border-color: #818cf8; color: #c7d2fe; background: rgba(99,102,241,.2); }
+    .position-grid button { background: #10172a; border-color: #303c60; }
+    .position-grid button:hover { border-color: rgba(103,232,249,.45); background: rgba(99,102,241,.14); }
+    .position-grid button:hover span { background: #67e8f9; box-shadow: 0 0 0 4px rgba(34,211,238,.1); }
+    .right-dock { background: rgba(13,18,34,.98); }
+    .output-card { background: linear-gradient(135deg, #18213a, #151d34); border-color: #344166; }
+    .primary { background: linear-gradient(115deg, #e94d39, #ff7657); box-shadow: 0 10px 25px rgba(240,82,59,.25); }
+    .primary:hover { box-shadow: 0 12px 30px rgba(240,82,59,.34); }
+    .export-progress { background: rgba(99,102,241,.1); border-color: rgba(129,140,248,.24); }
+    .progress-track { background: #252f4e; }
+    .progress-track span { background: linear-gradient(90deg, #818cf8, #22d3ee); }
+    dialog { background: #11182b; border-color: #344166; }
+    dialog::backdrop, .drawer-backdrop { background: rgba(5,8,20,.72); }
+    .toast { background: #1d2850; border-color: rgba(129,140,248,.35); }
+    .focus-marker { box-shadow: 0 0 0 3px rgba(99,102,241,.78), 0 6px 18px rgba(0,0,0,.35); }
+    .stage-shell.anchor-mode { box-shadow: 0 0 0 2px #67e8f9, 0 26px 70px rgba(0,0,0,.48); }
+    @media (max-width: 560px) {
+      .brand h1 { max-width: 122px; white-space: nowrap; font-size: 14px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
     }
@@ -764,9 +953,9 @@
         <svg class="brand-logo" viewBox="0 0 48 48">
           <defs>
             <linearGradient id="brandMarkBg" x1="5" y1="4" x2="43" y2="45" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#0b72bb"/>
-              <stop offset=".52" stop-color="#00aee9"/>
-              <stop offset="1" stop-color="#00d6b5"/>
+              <stop stop-color="#4f46e5"/>
+              <stop offset=".52" stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#22d3ee"/>
             </linearGradient>
             <linearGradient id="brandMarkShine" x1="16" y1="12" x2="35" y2="36" gradientUnits="userSpaceOnUse">
               <stop stop-color="#fff" stop-opacity=".28"/>
@@ -778,18 +967,20 @@
             <rect x="5" y="5" width="38" height="38" rx="11" fill="url(#brandMarkShine)"/>
             <path d="M15 10h-3.2A3.8 3.8 0 0 0 8 13.8V21M40 27v7.2a3.8 3.8 0 0 1-3.8 3.8H29" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
             <rect x="13" y="13" width="27" height="23" rx="7" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".52"/>
-            <circle cx="31.5" cy="20.5" r="2.8" fill="#93fff4"/>
+            <circle cx="31.5" cy="20.5" r="2.8" fill="#a5f3fc"/>
             <path d="m16.5 31.5 6.1-7.2 5.1 5.2 3.4-3.5 5.4 5.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           </g>
         </svg>
       </div>
       <div>
-        <h1>PConline 封面快裁</h1>
-        <p>专业编辑工作台 · 多规格输出 · 全程本地处理</p>
+        <h1>PConline 封面工作台</h1>
+        <p>从原图预览到多规格交付 · 全程本地处理</p>
       </div>
     </div>
     <div class="top-actions">
       <span class="privacy-pill"><span class="status-dot" aria-hidden="true"></span> 图片不上传</span>
+      <span class="save-state" id="saveState" data-state="idle">尚未保存</span>
+      <button class="ghost-light" id="projectBtn">项目</button>
       <button class="ghost-light" id="auditBtn">规格依据</button>
       <button class="ghost-light mobile-queue" id="queueBtn" aria-expanded="false" aria-controls="queuePanel">素材</button>
       <button class="ghost-light mobile-settings" id="settingsBtn" aria-expanded="false" aria-controls="settingsPanel">导出设置</button>
@@ -836,6 +1027,7 @@
           <canvas id="cropCanvas" aria-label="图片裁切预览"></canvas>
           <div class="grid-overlay" id="gridOverlay"></div>
           <div class="safe-box" id="safeBox"></div>
+          <div class="focus-marker" id="focusMarker" aria-hidden="true"></div>
         </div>
       </div>
 
@@ -900,6 +1092,119 @@
             <button type="button" data-row="bottom" data-col="center" aria-label="定位到底部居中"><span></span></button>
             <button type="button" data-row="bottom" data-col="right" aria-label="定位到右下"><span></span></button>
           </div>
+        </section>
+
+        <section class="section workflow-section">
+          <details class="inspector-group" open>
+            <summary>主体与规格联动 <span>统一多版位构图</span></summary>
+            <div class="inspector-content">
+              <div class="anchor-status" id="anchorStatus">
+                <strong>尚未设置主体锚点</strong>
+                点击“设定主体”，再在画布中点选人物、产品或视觉中心。
+              </div>
+              <div class="tool-grid">
+                <button class="secondary" id="setAnchorBtn" type="button">设定主体</button>
+                <button class="secondary" id="centerAnchorBtn" type="button" disabled>当前规格居中</button>
+              </div>
+              <div class="tool-grid" style="margin-top:7px">
+                <button class="secondary" id="syncGroupBtn" type="button" disabled>同步相近比例</button>
+                <button class="secondary" id="syncAllBtn" type="button" disabled>同步全部规格</button>
+              </div>
+              <p class="compact-note">同步会保留旋转、翻转与相对缩放，并让主体锚点在不同规格中保持居中；之后仍可逐项微调。</p>
+            </div>
+          </details>
+
+          <details class="inspector-group">
+            <summary>视觉调整 <span>非破坏调色</span></summary>
+            <div class="inspector-content">
+              <div class="adjustment-presets">
+                <button type="button" data-adjust-preset="natural"><strong>自然</strong><span>轻微提亮与锐化</span></button>
+                <button type="button" data-adjust-preset="tech"><strong>科技通透</strong><span>冷调、高对比</span></button>
+                <button type="button" data-adjust-preset="news"><strong>资讯鲜明</strong><span>暖调、适度饱和</span></button>
+                <button type="button" data-adjust-preset="mono"><strong>黑白纪实</strong><span>去色与层次增强</span></button>
+              </div>
+              <div class="adjustment-row" data-adjustment="exposure"><div class="mini-label"><span>曝光</span><strong>0</strong></div><input id="adjustExposure" type="range" min="-100" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="contrast"><div class="mini-label"><span>对比度</span><strong>0</strong></div><input id="adjustContrast" type="range" min="-100" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="highlights"><div class="mini-label"><span>高光</span><strong>0</strong></div><input id="adjustHighlights" type="range" min="-100" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="shadows"><div class="mini-label"><span>阴影</span><strong>0</strong></div><input id="adjustShadows" type="range" min="-100" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="saturation"><div class="mini-label"><span>饱和度</span><strong>0</strong></div><input id="adjustSaturation" type="range" min="-100" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="temperature"><div class="mini-label"><span>色温</span><strong>0</strong></div><input id="adjustTemperature" type="range" min="-100" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="sharpen"><div class="mini-label"><span>智能锐化</span><strong>0</strong></div><input id="adjustSharpen" type="range" min="0" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="denoise"><div class="mini-label"><span>智能降噪</span><strong>0</strong></div><input id="adjustDenoise" type="range" min="0" max="100" value="0"></div>
+              <div class="adjustment-row" data-adjustment="vignette"><div class="mini-label"><span>暗角</span><strong>0</strong></div><input id="adjustVignette" type="range" min="0" max="100" value="0"></div>
+              <button class="small-secondary" id="resetAdjustments" type="button">重置视觉调整</button>
+            </div>
+          </details>
+
+          <details class="inspector-group">
+            <summary>图层与品牌模板 <span>标题、角标、Logo</span></summary>
+            <div class="inspector-content">
+              <div class="template-grid">
+                <button class="template-card" type="button" data-template="tech"><strong>科技蓝</strong><span>底部渐变 + 青色角标</span></button>
+                <button class="template-card" type="button" data-template="news"><strong>资讯红</strong><span>左侧遮罩 + 橙红角标</span></button>
+                <button class="template-card" type="button" data-template="hardware"><strong>硬件深色</strong><span>高对比 + 冷色标题</span></button>
+                <button class="template-card" type="button" data-template="clean"><strong>简洁亮色</strong><span>轻遮罩 + 白色标题</span></button>
+              </div>
+              <div class="layer-form" style="margin-top:12px">
+                <label><span class="label">主标题</span><input class="field" id="titleText" maxlength="48" placeholder="输入封面标题"></label>
+                <label><span class="label">副标题</span><input class="field" id="subtitleText" maxlength="72" placeholder="可选说明文字"></label>
+                <label><span class="label">角标</span><input class="field" id="badgeText" maxlength="12" placeholder="例如：首发"></label>
+                <div class="layer-inline">
+                  <label><span class="label">标题颜色</span><div class="color-field"><input id="titleColor" type="color" value="#ffffff"><input class="field" id="titleColorText" value="#ffffff" aria-label="标题颜色值"></div></label>
+                  <label><span class="label">强调颜色</span><div class="color-field"><input id="accentColor" type="color" value="#14b8a6"><input class="field" id="accentColorText" value="#14b8a6" aria-label="强调颜色值"></div></label>
+                </div>
+                <label><span class="label">渐变遮罩</span><select id="gradientMode"><option value="bottom">底部</option><option value="left">左侧</option><option value="full">全幅暗化</option><option value="none">关闭</option></select></label>
+                <label class="switch-row"><span>显示主标题</span><input id="layerTitleEnabled" type="checkbox"></label>
+                <label class="switch-row"><span>显示副标题</span><input id="layerSubtitleEnabled" type="checkbox"></label>
+                <label class="switch-row"><span>显示角标</span><input id="layerBadgeEnabled" type="checkbox"></label>
+                <label class="switch-row"><span>显示渐变遮罩</span><input id="layerGradientEnabled" type="checkbox"></label>
+                <label class="switch-row"><span>显示上传 Logo</span><input id="layerLogoEnabled" type="checkbox"></label>
+                <div class="tool-grid">
+                  <button class="secondary" id="logoUploadBtn" type="button">上传 Logo</button>
+                  <button class="secondary" id="clearLogoBtn" type="button">移除 Logo</button>
+                </div>
+                <div class="adjustment-row"><div class="mini-label"><span>Logo 不透明度</span><strong id="logoOpacityNumber">100</strong></div><input id="logoOpacity" type="range" min="10" max="100" value="100"></div>
+              </div>
+            </div>
+          </details>
+
+          <details class="inspector-group">
+            <summary>版本与批量 <span>A/B 与审核流</span></summary>
+            <div class="inspector-content">
+              <div class="review-row">
+                <label><span class="label">当前状态</span><select id="reviewStatus"><option value="draft">待处理</option><option value="review">待检查</option><option value="approved">已通过</option></select></label>
+                <label><span class="label">当前版本</span><input class="field" id="versionName" value="A" maxlength="8"></label>
+              </div>
+              <div class="tool-grid" style="margin-top:9px">
+                <button class="secondary" id="createVersionBtn" type="button">新建版本</button>
+                <button class="secondary" id="compareVersionsBtn" type="button">版本对比</button>
+              </div>
+              <button class="small-secondary" id="batchApplyBtn" type="button">将当前规则批量应用…</button>
+            </div>
+          </details>
+
+          <details class="inspector-group">
+            <summary>本地增强实验室 <span>可降级处理</span></summary>
+            <div class="inspector-content">
+              <div class="lab-card">
+                <div class="lab-head"><strong>背景处理</strong><span class="lab-badge">本地蒙版</span></div>
+                <p>基于画面边缘与色差分析，最适合背景较干净的产品图或人物图。</p>
+                <label style="display:block;margin-top:9px"><span class="label">背景模式</span><select id="backgroundMode"><option value="none">关闭</option><option value="blur">背景模糊</option><option value="remove">移除背景</option></select></label>
+                <div class="adjustment-row"><div class="mini-label"><span>识别容差</span><strong id="backgroundToleranceNumber">34</strong></div><input id="backgroundTolerance" type="range" min="10" max="90" value="34"></div>
+                <div class="adjustment-row"><div class="mini-label"><span>边缘柔化</span><strong id="backgroundFeatherNumber">4</strong></div><input id="backgroundFeather" type="range" min="0" max="12" value="4"></div>
+                <div class="tool-grid" style="margin-top:8px">
+                  <button class="secondary" id="analyzeBackgroundBtn" type="button">分析背景</button>
+                  <button class="secondary" id="invertMaskBtn" type="button">反转蒙版</button>
+                </div>
+              </div>
+              <div class="lab-card">
+                <div class="lab-head"><strong>WebGPU 超分增强</strong><span class="lab-badge" id="gpuStatus">检测中</span></div>
+                <p>使用边缘增强插值提高放大观感；不生成不存在的纹理，设备不支持时自动使用 Canvas 高质量缩放。</p>
+                <label class="switch-row"><span>导出时启用增强</span><input id="superResEnabled" type="checkbox"></label>
+                <div class="adjustment-row"><div class="mini-label"><span>细节恢复强度</span><strong id="superResStrengthNumber">35</strong></div><input id="superResStrength" type="range" min="0" max="100" value="35"></div>
+              </div>
+            </div>
+          </details>
         </section>
 
         <section class="section">
@@ -971,10 +1276,10 @@
       <div class="right-dock">
         <div class="output-card">
           <div>
-            <strong id="outputName">首页主焦点</strong>
-            <span id="outputRatio">约 2.14:1</span>
+            <strong id="outputName">原图模式</strong>
+            <span id="outputRatio">上传后自动匹配比例</span>
           </div>
-          <div class="size-badge" id="outputSize">696 × 325</div>
+          <div class="size-badge" id="outputSize">等待图片</div>
         </div>
         <div class="export-progress" id="exportProgress" hidden>
           <div><span id="exportProgressLabel">正在生成</span><strong id="exportProgressValue">0%</strong></div>
@@ -982,7 +1287,7 @@
         </div>
         <div class="export-stack">
           <button class="secondary preflight-button" id="preflightBtn" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="m15 18 2 2 4-5"/></svg>全规格预检</button>
-          <button class="primary" id="downloadCurrent" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>下载当前裁图</button>
+          <button class="primary" id="downloadCurrent" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg><span id="downloadCurrentLabel">下载原图处理结果</span></button>
           <div class="batch-actions">
             <button class="secondary" id="downloadPresetZip" disabled>当前图 · 全规格</button>
             <button class="secondary" id="downloadQueueZip" disabled>全部图 · 当前规格</button>
@@ -995,6 +1300,8 @@
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
 
   <input id="fileInput" type="file" accept="image/*" multiple hidden>
+  <input id="logoInput" type="file" accept="image/png,image/webp,image/svg+xml,image/jpeg" hidden>
+  <input id="projectInput" type="file" accept="application/json,.json" hidden>
 
   <dialog id="auditDialog" aria-labelledby="auditTitle">
     <div class="dialog-head">
@@ -1046,6 +1353,63 @@
     <div class="pixel-foot"><span>提示：此视图不缩放画面，屏幕上的 1 像素对应导出的 1 像素。</span></div>
   </dialog>
 
+  <dialog id="projectDialog" aria-labelledby="projectTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Local project</p><h2 id="projectTitle">本地项目</h2><p>图片与编辑状态仅保存在当前浏览器或导出的项目文件中。</p></div>
+      <button class="icon-close" id="closeProject" aria-label="关闭项目面板">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="project-hero">
+        <div class="project-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg></div>
+        <div><strong id="projectSummary">当前项目暂无素材</strong><span id="projectUpdated">自动保存将在发生修改后启动</span></div>
+      </div>
+      <div class="dialog-section">
+        <h3>继续编辑</h3>
+        <div class="tool-grid">
+          <button class="secondary" id="saveProjectNow" type="button">立即保存</button>
+          <button class="secondary" id="restoreProjectBtn" type="button">恢复上次项目</button>
+        </div>
+      </div>
+      <div class="dialog-section">
+        <h3>跨设备项目文件</h3>
+        <div class="tool-grid">
+          <button class="secondary" id="exportProjectBtn" type="button">导出项目 JSON</button>
+          <button class="secondary" id="importProjectBtn" type="button">导入项目 JSON</button>
+        </div>
+        <p class="compact-note">项目文件包含原图数据，体积可能较大；不会上传到任何服务器。</p>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="batchDialog" aria-labelledby="batchTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Batch recipe</p><h2 id="batchTitle">批量应用当前规则</h2><p>把当前图片的选定设置复制到队列中的其他图片。</p></div>
+      <button class="icon-close" id="closeBatch" aria-label="关闭批量规则">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="check-list">
+        <label><input id="batchAdjustments" type="checkbox" checked> 视觉调整与智能锐化降噪</label>
+        <label><input id="batchLayers" type="checkbox" checked> 标题、角标、遮罩和 Logo 图层</label>
+        <label><input id="batchCurrentCrop" type="checkbox"> 当前规格构图</label>
+        <label><input id="batchAllCrops" type="checkbox"> 所有官网规格构图</label>
+        <label><input id="batchBackground" type="checkbox"> 背景模式与蒙版参数</label>
+        <label><input id="batchStatus" type="checkbox"> 审核状态</label>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button class="secondary" id="cancelBatch" type="button">取消</button>
+      <button class="primary" id="confirmBatch" type="button">应用到其他图片</button>
+    </div>
+  </dialog>
+
+  <dialog class="wide-dialog" id="versionDialog" aria-labelledby="versionTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Version compare</p><h2 id="versionTitle">封面版本对比</h2><p id="versionSummary">同一素材的不同方案会并排展示。</p></div>
+      <button class="icon-close" id="closeVersions" aria-label="关闭版本对比">×</button>
+    </div>
+    <div class="dialog-body"><div class="version-grid" id="versionGrid"></div></div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -1061,20 +1425,24 @@
         { id: 'video-wide', name: '视频横图', w: 315, h: 177, ratio: '约 16:9' },
         { id: 'topic-thumb', name: '专题缩略', w: 256, h: 144, ratio: '16:9' }
       ];
+      const ORIGINAL_PRESET = { id: 'original', name: '原图模式', w: 1600, h: 900, ratio: '完整显示，不裁切', original: true };
 
       const $ = (id) => document.getElementById(id);
       const canvas = $('cropCanvas');
-      const ctx = canvas.getContext('2d', { alpha: false });
+      const ctx = canvas.getContext('2d');
       const fileInput = $('fileInput');
       const stageShell = $('stageShell');
       const MAX_EXPORT_EDGE = 16384;
       const MAX_EXPORT_PIXELS = 80_000_000;
       const MAX_PREVIEW_EDGE = 4096;
       const MAX_INSPECT_PIXELS = 32_000_000;
+      const MAX_EFFECT_PIXELS = 16_000_000;
+      const MASK_MAX_EDGE = 720;
       const MAX_HISTORY = 40;
+      const PROJECT_VERSION = 2;
       let items = [];
       let activeIndex = -1;
-      let activePreset = PRESETS[0];
+      let activePreset = { ...ORIGINAL_PRESET };
       let customSerial = 0;
       let pointer = null;
       let busy = false;
@@ -1084,6 +1452,10 @@
       let wheelHistoryTimer = 0;
       let zoomHistoryStart = null;
       let exportProgressTimer = 0;
+      let anchorMode = false;
+      let autosaveTimer = 0;
+      let projectDbPromise = null;
+      let lastEnhanceEngine = 'Canvas';
 
       const saved = (() => {
         try { return JSON.parse(localStorage.getItem('pconline-cropper-settings') || '{}'); }
@@ -1096,6 +1468,8 @@
       if (saved.suffix) $('suffixSelect').value = saved.suffix;
       if (saved.limit) $('limitEnabled').checked = true;
       if (saved.maxKb) $('maxKb').value = saved.maxKb;
+      if (saved.superResEnabled) $('superResEnabled').checked = true;
+      if (Number.isFinite(Number(saved.superResStrength))) $('superResStrength').value = saved.superResStrength;
 
       function persistSettings() {
         try {
@@ -1105,9 +1479,66 @@
             outputScale,
             suffix: $('suffixSelect').value,
             limit: $('limitEnabled').checked,
-            maxKb: $('maxKb').value
+            maxKb: $('maxKb').value,
+            superResEnabled: $('superResEnabled').checked,
+            superResStrength: $('superResStrength').value
           }));
         } catch {}
+      }
+
+      function uid(prefix = 'id') {
+        return `${prefix}-${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
+      }
+
+      function defaultAdjustments() {
+        return { exposure: 0, contrast: 0, highlights: 0, shadows: 0, saturation: 0, temperature: 0, sharpen: 0, denoise: 0, vignette: 0, monochrome: false };
+      }
+
+      function defaultLayers() {
+        return {
+          title: { enabled: false, text: '', color: '#ffffff' },
+          subtitle: { enabled: false, text: '', color: '#d8ebe8' },
+          badge: { enabled: false, text: '', color: '#14b8a6' },
+          gradient: { enabled: false, mode: 'bottom', strength: .76 },
+          logo: { enabled: false, dataUrl: '', opacity: 1, image: null }
+        };
+      }
+
+      function defaultBackground() {
+        return { mode: 'none', tolerance: 34, feather: 4, inverted: false, maskCanvas: null, status: 'idle' };
+      }
+
+      function ensureItemState(item) {
+        item.id ||= uid('asset');
+        item.sourceId ||= item.id;
+        item.versionGroup ||= item.sourceId;
+        item.versionName ||= 'A';
+        item.reviewStatus ||= 'draft';
+        item.adjustments = Object.assign(defaultAdjustments(), item.adjustments || {});
+        item.layers = Object.assign(defaultLayers(), item.layers || {});
+        item.layers.title = Object.assign(defaultLayers().title, item.layers.title || {});
+        item.layers.subtitle = Object.assign(defaultLayers().subtitle, item.layers.subtitle || {});
+        item.layers.badge = Object.assign(defaultLayers().badge, item.layers.badge || {});
+        item.layers.gradient = Object.assign(defaultLayers().gradient, item.layers.gradient || {});
+        item.layers.logo = Object.assign(defaultLayers().logo, item.layers.logo || {});
+        item.background = Object.assign(defaultBackground(), item.background || {});
+        if (!item.crops) item.crops = new Map();
+        if (!(item.crops instanceof Map)) item.crops = new Map(Object.entries(item.crops));
+        return item;
+      }
+
+      function clonePlain(value) {
+        return JSON.parse(JSON.stringify(value, (key, val) => key === 'image' || key === 'maskCanvas' ? undefined : val));
+      }
+
+      function markDirty() {
+        clearTimeout(autosaveTimer);
+        $('saveState').dataset.state = 'saving';
+        $('saveState').textContent = '等待自动保存';
+        autosaveTimer = setTimeout(() => saveProjectToIdb().catch(() => {
+          $('saveState').dataset.state = 'error';
+          $('saveState').textContent = '保存失败';
+        }), 900);
       }
 
       function ratioText(w, h) {
@@ -1115,6 +1546,22 @@
       }
 
       function presetKey(p) { return `${p.id}-${p.w}x${p.h}`; }
+
+      function isOriginalMode(preset = activePreset) { return preset?.id === 'original'; }
+
+      function originalPresetFor(item) {
+        return item ? {
+          ...ORIGINAL_PRESET,
+          w: item.img.naturalWidth,
+          h: item.img.naturalHeight,
+          ratio: `${ratioText(item.img.naturalWidth, item.img.naturalHeight)} · 完整原图`
+        } : { ...ORIGINAL_PRESET };
+      }
+
+      function activateOriginalMode(item = currentItem()) {
+        activePreset = originalPresetFor(item);
+        buildPresetGrid();
+      }
 
       function cropFor(item, preset = activePreset) {
         const key = presetKey(preset);
@@ -1162,12 +1609,13 @@
 
       function mutateCrop(mutator) {
         const item = currentItem();
-        if (!item) return;
+        if (!item || isOriginalMode()) return;
         const crop = cropFor(item);
         const before = cropSnapshot(crop);
         mutator(crop, item);
         render();
         commitHistory(before, item);
+        markDirty();
       }
 
       function applyHistory(direction) {
@@ -1180,6 +1628,7 @@
         to.push(cropSnapshot(cropFor(item)));
         item.crops.set(presetKey(activePreset), from.pop());
         render();
+        markDirty();
       }
 
       function updateHistoryButtons() {
@@ -1281,41 +1730,285 @@
         return Math.max(.02, Math.min(outputScale, screenScale, edgeScale, pixelScale));
       }
 
-      function drawTo(targetCtx, targetCanvas, item, preset, crop, exportScale = 1) {
-        const outputW = preset.w * exportScale;
-        const outputH = preset.h * exportScale;
-        targetCanvas.width = outputW;
-        targetCanvas.height = outputH;
-        clampCrop(item, preset, crop);
+      function adjustmentFilter(adjustments) {
+        const exposure = Math.pow(2, adjustments.exposure / 100) * 100;
+        const contrast = Math.max(20, 100 + adjustments.contrast * .72);
+        const saturation = Math.max(0, 100 + adjustments.saturation);
+        const grayscale = adjustments.monochrome ? 100 : 0;
+        return `brightness(${exposure}%) contrast(${contrast}%) saturate(${saturation}%) grayscale(${grayscale}%)`;
+      }
 
+      function imageTransform(item, preset, crop, exportScale = 1) {
         const normalized = ((crop.rotation % 360) + 360) % 360;
         const swapped = normalized === 90 || normalized === 270;
         const ow = swapped ? item.img.naturalHeight : item.img.naturalWidth;
         const oh = swapped ? item.img.naturalWidth : item.img.naturalHeight;
-        const scale = Math.max(preset.w / ow, preset.h / oh) * crop.zoom * exportScale;
+        return Math.max(preset.w / ow, preset.h / oh) * crop.zoom * exportScale;
+      }
 
+      function drawSource(targetCtx, item, preset, crop, exportScale, source = item.img, filter = 'none') {
+        const outputW = preset.w * exportScale;
+        const outputH = preset.h * exportScale;
+        const scale = imageTransform(item, preset, crop, exportScale);
         targetCtx.save();
-        targetCtx.fillStyle = '#0b1115';
-        targetCtx.fillRect(0, 0, outputW, outputH);
         targetCtx.imageSmoothingEnabled = true;
         targetCtx.imageSmoothingQuality = 'high';
+        targetCtx.filter = filter;
         targetCtx.translate(outputW / 2 + crop.x * exportScale, outputH / 2 + crop.y * exportScale);
         targetCtx.rotate(crop.rotation * Math.PI / 180);
         targetCtx.scale(crop.flipX ? -scale : scale, crop.flipY ? -scale : scale);
-        targetCtx.drawImage(item.img, -item.img.naturalWidth / 2, -item.img.naturalHeight / 2);
+        if (source === item.img) {
+          targetCtx.drawImage(source, -item.img.naturalWidth / 2, -item.img.naturalHeight / 2);
+        } else {
+          targetCtx.drawImage(source, -item.img.naturalWidth / 2, -item.img.naturalHeight / 2, item.img.naturalWidth, item.img.naturalHeight);
+        }
         targetCtx.restore();
+      }
+
+      function applyPixelEnhancements(targetCtx, targetCanvas, item) {
+        const adj = item.adjustments;
+        const hasPixelWork = adj.highlights || adj.shadows || adj.temperature || adj.sharpen || adj.denoise || adj.vignette;
+        if (!hasPixelWork || targetCanvas.width * targetCanvas.height > MAX_EFFECT_PIXELS) return;
+        const imageData = targetCtx.getImageData(0, 0, targetCanvas.width, targetCanvas.height);
+        const data = imageData.data;
+        const source = new Uint8ClampedArray(data);
+        const w = targetCanvas.width;
+        const h = targetCanvas.height;
+        const denoise = adj.denoise / 100 * .48;
+        const sharpen = adj.sharpen / 100 * 1.35;
+        const warmth = adj.temperature / 100 * 24;
+        const highlights = adj.highlights / 100 * 52;
+        const shadows = adj.shadows / 100 * 52;
+        const vignette = adj.vignette / 100 * .64;
+        const cx = w / 2;
+        const cy = h / 2;
+        const invRadius = 1 / Math.max(1, Math.hypot(cx, cy));
+        const clamp = value => Math.max(0, Math.min(255, value));
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const i = (y * w + x) * 4;
+            if (source[i + 3] === 0) continue;
+            const neighbors = [i - 4, i + 4, i - w * 4, i + w * 4];
+            let rAvg = 0, gAvg = 0, bAvg = 0;
+            for (const n of neighbors) { rAvg += source[n]; gAvg += source[n + 1]; bAvg += source[n + 2]; }
+            rAvg /= 4; gAvg /= 4; bAvg /= 4;
+            let r = source[i] * (1 - denoise) + rAvg * denoise;
+            let g = source[i + 1] * (1 - denoise) + gAvg * denoise;
+            let b = source[i + 2] * (1 - denoise) + bAvg * denoise;
+            r += (r - rAvg) * sharpen;
+            g += (g - gAvg) * sharpen;
+            b += (b - bAvg) * sharpen;
+            const luma = (r * .2126 + g * .7152 + b * .0722) / 255;
+            const tone = highlights * luma * luma + shadows * (1 - luma) * (1 - luma);
+            r += tone + warmth;
+            g += tone + Math.abs(warmth) * .08;
+            b += tone - warmth;
+            if (vignette) {
+              const distance = Math.hypot(x - cx, y - cy) * invRadius;
+              const shade = 1 - Math.max(0, distance - .28) ** 1.7 * vignette;
+              r *= shade; g *= shade; b *= shade;
+            }
+            data[i] = clamp(r); data[i + 1] = clamp(g); data[i + 2] = clamp(b);
+          }
+        }
+        targetCtx.putImageData(imageData, 0, 0);
+      }
+
+      function wrapCanvasText(context, text, maxWidth) {
+        const chars = [...text];
+        const lines = [];
+        let line = '';
+        for (const char of chars) {
+          const next = line + char;
+          if (line && context.measureText(next).width > maxWidth) { lines.push(line); line = char; }
+          else line = next;
+        }
+        if (line) lines.push(line);
+        return lines.slice(0, 2);
+      }
+
+      function drawOverlays(targetCtx, targetCanvas, item) {
+        const layers = item.layers;
+        const w = targetCanvas.width;
+        const h = targetCanvas.height;
+        if (layers.gradient.enabled && layers.gradient.mode !== 'none') {
+          let gradient;
+          if (layers.gradient.mode === 'left') gradient = targetCtx.createLinearGradient(0, 0, w * .72, 0);
+          else if (layers.gradient.mode === 'full') gradient = targetCtx.createLinearGradient(0, 0, 0, h);
+          else gradient = targetCtx.createLinearGradient(0, h * .34, 0, h);
+          if (layers.gradient.mode === 'full') {
+            gradient.addColorStop(0, `rgba(2,8,10,${layers.gradient.strength * .36})`);
+            gradient.addColorStop(1, `rgba(2,8,10,${layers.gradient.strength * .68})`);
+          } else {
+            gradient.addColorStop(0, layers.gradient.mode === 'left' ? `rgba(2,8,10,${layers.gradient.strength})` : 'rgba(2,8,10,0)');
+            gradient.addColorStop(1, layers.gradient.mode === 'left' ? 'rgba(2,8,10,0)' : `rgba(2,8,10,${layers.gradient.strength})`);
+          }
+          targetCtx.save(); targetCtx.fillStyle = gradient; targetCtx.fillRect(0, 0, w, h); targetCtx.restore();
+        }
+
+        const left = w * .06;
+        if (layers.badge.enabled && layers.badge.text) {
+          const size = Math.max(12, h * .043);
+          targetCtx.save();
+          targetCtx.font = `700 ${size}px "Segoe UI Variable", "Microsoft YaHei", sans-serif`;
+          const badgeW = targetCtx.measureText(layers.badge.text).width + size * 1.2;
+          const badgeH = size * 1.72;
+          targetCtx.fillStyle = layers.badge.color;
+          targetCtx.beginPath(); targetCtx.roundRect(left, h * .075, badgeW, badgeH, badgeH * .28); targetCtx.fill();
+          targetCtx.fillStyle = '#ffffff'; targetCtx.textBaseline = 'middle';
+          targetCtx.fillText(layers.badge.text, left + size * .6, h * .075 + badgeH / 2 + size * .02);
+          targetCtx.restore();
+        }
+
+        if (layers.title.enabled && layers.title.text) {
+          const size = Math.max(18, h * .098);
+          targetCtx.save();
+          targetCtx.font = `800 ${size}px "Segoe UI Variable", "PingFang SC", "Microsoft YaHei", sans-serif`;
+          targetCtx.fillStyle = layers.title.color;
+          targetCtx.textBaseline = 'top';
+          targetCtx.shadowColor = 'rgba(0,0,0,.52)'; targetCtx.shadowBlur = size * .22; targetCtx.shadowOffsetY = size * .07;
+          const lines = wrapCanvasText(targetCtx, layers.title.text, w * .86);
+          const startY = h * (lines.length > 1 ? .66 : .73);
+          lines.forEach((line, index) => targetCtx.fillText(line, left, startY + index * size * 1.08));
+          targetCtx.restore();
+        }
+
+        if (layers.subtitle.enabled && layers.subtitle.text) {
+          const size = Math.max(11, h * .04);
+          targetCtx.save();
+          targetCtx.font = `600 ${size}px "Segoe UI Variable", "Microsoft YaHei", sans-serif`;
+          targetCtx.fillStyle = layers.subtitle.color;
+          targetCtx.textBaseline = 'bottom';
+          targetCtx.shadowColor = 'rgba(0,0,0,.6)'; targetCtx.shadowBlur = size * .18;
+          targetCtx.fillText(layers.subtitle.text, left, h * .94, w * .86);
+          targetCtx.restore();
+        }
+
+        const logo = layers.logo;
+        if (logo.enabled && logo.image?.complete && logo.image.naturalWidth) {
+          const maxW = w * .2;
+          const maxH = h * .14;
+          const scale = Math.min(maxW / logo.image.naturalWidth, maxH / logo.image.naturalHeight);
+          const logoW = logo.image.naturalWidth * scale;
+          const logoH = logo.image.naturalHeight * scale;
+          targetCtx.save(); targetCtx.globalAlpha = logo.opacity;
+          targetCtx.drawImage(logo.image, w - logoW - w * .055, h * .06, logoW, logoH);
+          targetCtx.restore();
+        }
+      }
+
+      function drawTo(targetCtx, targetCanvas, rawItem, preset, crop, exportScale = 1, options = {}) {
+        const item = ensureItemState(rawItem);
+        const outputW = Math.max(1, Math.round(preset.w * exportScale));
+        const outputH = Math.max(1, Math.round(preset.h * exportScale));
+        targetCanvas.width = outputW;
+        targetCanvas.height = outputH;
+        clampCrop(item, preset, crop);
+        targetCtx.clearRect(0, 0, outputW, outputH);
+
+        const filter = adjustmentFilter(item.adjustments);
+        const bg = item.background;
+        const useMask = bg.mode !== 'none' && bg.maskCanvas;
+        if (!useMask) {
+          targetCtx.fillStyle = '#0b1115'; targetCtx.fillRect(0, 0, outputW, outputH);
+          drawSource(targetCtx, item, preset, crop, exportScale, item.img, filter);
+        } else {
+          if (bg.mode === 'blur') {
+            targetCtx.fillStyle = '#0b1115'; targetCtx.fillRect(0, 0, outputW, outputH);
+            drawSource(targetCtx, item, preset, crop, exportScale, item.img, `${filter} blur(${Math.max(5, outputW / 75)}px)`);
+          }
+          const foreground = document.createElement('canvas');
+          foreground.width = outputW; foreground.height = outputH;
+          const foregroundCtx = foreground.getContext('2d');
+          drawSource(foregroundCtx, item, preset, crop, exportScale, item.img, filter);
+          foregroundCtx.globalCompositeOperation = 'destination-in';
+          drawSource(foregroundCtx, item, preset, crop, exportScale, bg.maskCanvas,
+            bg.feather ? `blur(${Math.max(0, bg.feather * exportScale * .35)}px)` : 'none');
+          foregroundCtx.globalCompositeOperation = 'source-over'; foregroundCtx.filter = 'none';
+          targetCtx.drawImage(foreground, 0, 0);
+        }
+
+        if (!options.skipPixelEffects) applyPixelEnhancements(targetCtx, targetCanvas, item);
+        if (!options.skipLayers) drawOverlays(targetCtx, targetCanvas, item);
+      }
+
+      function sourcePointToPreset(item, preset, crop, point) {
+        const scale = imageTransform(item, preset, crop, 1);
+        const sx = (point.x - .5) * item.img.naturalWidth * (crop.flipX ? -scale : scale);
+        const sy = (point.y - .5) * item.img.naturalHeight * (crop.flipY ? -scale : scale);
+        const angle = crop.rotation * Math.PI / 180;
+        return {
+          x: preset.w / 2 + crop.x + sx * Math.cos(angle) - sy * Math.sin(angle),
+          y: preset.h / 2 + crop.y + sx * Math.sin(angle) + sy * Math.cos(angle)
+        };
+      }
+
+      function presetPointToSource(item, preset, crop, point) {
+        const scale = imageTransform(item, preset, crop, 1);
+        const dx = point.x - preset.w / 2 - crop.x;
+        const dy = point.y - preset.h / 2 - crop.y;
+        const angle = -crop.rotation * Math.PI / 180;
+        const rx = dx * Math.cos(angle) - dy * Math.sin(angle);
+        const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
+        return {
+          x: Math.max(0, Math.min(1, .5 + rx / (item.img.naturalWidth * (crop.flipX ? -scale : scale)))),
+          y: Math.max(0, Math.min(1, .5 + ry / (item.img.naturalHeight * (crop.flipY ? -scale : scale))))
+        };
+      }
+
+      function updateFocusMarker(item) {
+        const marker = $('focusMarker');
+        if (!item?.focus) { marker.classList.remove('show'); return; }
+        const point = sourcePointToPreset(item, activePreset, cropFor(item), item.focus);
+        marker.style.left = `${point.x / activePreset.w * 100}%`;
+        marker.style.top = `${point.y / activePreset.h * 100}%`;
+        marker.classList.add('show');
+      }
+
+      function centerFocusInPreset(item, preset, referenceCrop = cropFor(item)) {
+        if (!item.focus) return;
+        const crop = cropFor(item, preset);
+        crop.zoom = referenceCrop.zoom;
+        crop.rotation = referenceCrop.rotation;
+        crop.flipX = referenceCrop.flipX;
+        crop.flipY = referenceCrop.flipY;
+        crop.x = crop.y = 0;
+        const point = sourcePointToPreset(item, preset, crop, item.focus);
+        crop.x = preset.w / 2 - point.x;
+        crop.y = preset.h / 2 - point.y;
+        clampCrop(item, preset, crop);
+      }
+
+      function renderAnchorStatus(item) {
+        const status = $('anchorStatus');
+        const enabled = !!item?.focus;
+        status.classList.toggle('active', enabled);
+        status.innerHTML = enabled
+          ? `<strong>主体锚点已设置</strong>源图位置 ${(item.focus.x * 100).toFixed(0)}% · ${(item.focus.y * 100).toFixed(0)}%，可同步到其他版位。`
+          : '<strong>尚未设置主体锚点</strong>点击“设定主体”，再在画布中点选人物、产品或视觉中心。';
+        $('centerAnchorBtn').disabled = !enabled || isOriginalMode();
+        $('syncGroupBtn').disabled = !enabled;
+        $('syncAllBtn').disabled = !enabled;
+        $('setAnchorBtn').classList.toggle('active', anchorMode);
+        $('setAnchorBtn').textContent = anchorMode ? '请点击画布主体' : '设定主体';
       }
 
       function render() {
         const item = currentItem();
+        if (item && isOriginalMode() && (activePreset.w !== item.img.naturalWidth || activePreset.h !== item.img.naturalHeight)) {
+          activePreset = originalPresetFor(item);
+        }
         const ratio = activePreset.w / activePreset.h;
         stageShell.style.setProperty('--ratio', ratio);
+        stageShell.classList.toggle('original-mode', isOriginalMode());
         $('outputName').textContent = activePreset.name;
-        $('outputRatio').textContent = activePreset.ratio || ratioText(activePreset.w, activePreset.h);
-        $('outputSize').textContent = `${activePreset.w * outputScale} × ${activePreset.h * outputScale}`;
+        $('outputRatio').textContent = item ? (activePreset.ratio || ratioText(activePreset.w, activePreset.h)) : '上传后自动匹配比例';
+        $('outputSize').textContent = item ? `${activePreset.w * outputScale} × ${activePreset.h * outputScale}` : '等待图片';
+        $('downloadCurrentLabel').textContent = isOriginalMode() ? '下载原图处理结果' : '下载当前裁图';
         document.querySelectorAll('.preset').forEach(el => el.classList.toggle('active', el.dataset.id === activePreset.id));
         renderQualityStatus(item);
         updateHistoryButtons();
+        renderAnchorStatus(item);
 
         if (!item) {
           const previewScale = previewScaleFor();
@@ -1323,6 +2016,7 @@
           canvas.height = Math.max(1, Math.round(activePreset.h * previewScale));
           ctx.fillStyle = '#0b1115';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
+          updateFocusMarker(null);
           return;
         }
 
@@ -1330,16 +2024,248 @@
         // The preview reflects the selected export resolution but is capped to the
         // display's useful pixel density. Full-size pixels remain available in 1:1 view.
         drawTo(ctx, canvas, item, activePreset, crop, previewScaleFor());
+        updateFocusMarker(item);
         $('zoomRange').value = Math.round(crop.zoom * 100);
         $('zoomNumber').textContent = Math.round(crop.zoom * 100) + '%';
         $('flipX').classList.toggle('active', crop.flipX);
         $('currentName').textContent = item.name;
         const output = outputDimensions();
-        $('currentMeta').textContent = `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight}  ·  输出 ${output.width} × ${output.height}`;
+        $('currentMeta').textContent = isOriginalMode()
+          ? `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight} · 完整预览 · 尚未裁切`
+          : `原图 ${item.img.naturalWidth} × ${item.img.naturalHeight} · 输出 ${output.width} × ${output.height}`;
       }
 
+      const ADJUSTMENT_CONTROLS = {
+        exposure: 'adjustExposure', contrast: 'adjustContrast', highlights: 'adjustHighlights', shadows: 'adjustShadows',
+        saturation: 'adjustSaturation', temperature: 'adjustTemperature', sharpen: 'adjustSharpen', denoise: 'adjustDenoise', vignette: 'adjustVignette'
+      };
+
+      function hydrateLogoImage(item) {
+        const logo = item?.layers?.logo;
+        if (!logo?.dataUrl) { if (logo) logo.image = null; return; }
+        if (logo.image?.src === logo.dataUrl) return;
+        const image = new Image();
+        image.onload = () => render();
+        image.src = logo.dataUrl;
+        logo.image = image;
+      }
+
+      function syncInspectorFromItem() {
+        const item = currentItem();
+        const controls = [...Object.values(ADJUSTMENT_CONTROLS), 'titleText', 'subtitleText', 'badgeText', 'titleColor', 'titleColorText', 'accentColor', 'accentColorText', 'gradientMode', 'layerTitleEnabled', 'layerSubtitleEnabled', 'layerBadgeEnabled', 'layerGradientEnabled', 'layerLogoEnabled', 'logoOpacity', 'reviewStatus', 'versionName', 'backgroundMode', 'backgroundTolerance', 'backgroundFeather', 'analyzeBackgroundBtn', 'invertMaskBtn', 'createVersionBtn', 'compareVersionsBtn', 'batchApplyBtn'];
+        controls.forEach(id => { if ($(id)) $(id).disabled = !item; });
+        if (!item) return;
+        ensureItemState(item); hydrateLogoImage(item);
+        Object.entries(ADJUSTMENT_CONTROLS).forEach(([key, id]) => {
+          $(id).value = item.adjustments[key];
+          document.querySelector(`[data-adjustment="${key}"] strong`).textContent = item.adjustments[key];
+        });
+        $('titleText').value = item.layers.title.text;
+        $('subtitleText').value = item.layers.subtitle.text;
+        $('badgeText').value = item.layers.badge.text;
+        $('titleColor').value = item.layers.title.color;
+        $('titleColorText').value = item.layers.title.color;
+        $('accentColor').value = item.layers.badge.color;
+        $('accentColorText').value = item.layers.badge.color;
+        $('gradientMode').value = item.layers.gradient.mode;
+        $('layerTitleEnabled').checked = item.layers.title.enabled;
+        $('layerSubtitleEnabled').checked = item.layers.subtitle.enabled;
+        $('layerBadgeEnabled').checked = item.layers.badge.enabled;
+        $('layerGradientEnabled').checked = item.layers.gradient.enabled;
+        $('layerLogoEnabled').checked = item.layers.logo.enabled;
+        $('logoOpacity').value = Math.round(item.layers.logo.opacity * 100);
+        $('logoOpacityNumber').textContent = Math.round(item.layers.logo.opacity * 100);
+        $('reviewStatus').value = item.reviewStatus;
+        $('versionName').value = item.versionName;
+        $('backgroundMode').value = item.background.mode;
+        $('backgroundTolerance').value = item.background.tolerance;
+        $('backgroundToleranceNumber').textContent = item.background.tolerance;
+        $('backgroundFeather').value = item.background.feather;
+        $('backgroundFeatherNumber').textContent = item.background.feather;
+        $('invertMaskBtn').disabled = !item.background.maskCanvas;
+        updateProjectSummary();
+      }
+
+      function applyAdjustmentPreset(name) {
+        const item = currentItem(); if (!item) return;
+        const presets = {
+          natural: { exposure: 8, contrast: 6, highlights: -6, shadows: 8, saturation: 4, temperature: 0, sharpen: 18, denoise: 5, vignette: 0, monochrome: false },
+          tech: { exposure: 4, contrast: 20, highlights: -12, shadows: 5, saturation: 9, temperature: -18, sharpen: 28, denoise: 8, vignette: 9, monochrome: false },
+          news: { exposure: 6, contrast: 14, highlights: -8, shadows: 10, saturation: 18, temperature: 10, sharpen: 21, denoise: 6, vignette: 5, monochrome: false },
+          mono: { exposure: 2, contrast: 24, highlights: -10, shadows: 10, saturation: -100, temperature: 0, sharpen: 22, denoise: 7, vignette: 14, monochrome: true }
+        };
+        Object.assign(item.adjustments, defaultAdjustments(), presets[name]);
+        syncInspectorFromItem(); render(); markDirty(); showToast('视觉预设已应用');
+      }
+
+      function applyBrandTemplate(name) {
+        const item = currentItem(); if (!item) return;
+        const templates = {
+          tech: { accent: '#14b8a6', title: '#ffffff', subtitle: '#ccfbf1', gradient: 'bottom', adjustment: 'tech' },
+          news: { accent: '#ea580c', title: '#ffffff', subtitle: '#ffedd5', gradient: 'left', adjustment: 'news' },
+          hardware: { accent: '#22d3ee', title: '#ecfeff', subtitle: '#a5f3fc', gradient: 'full', adjustment: 'tech' },
+          clean: { accent: '#0d9488', title: '#ffffff', subtitle: '#d8ebe8', gradient: 'bottom', adjustment: 'natural' }
+        };
+        const template = templates[name];
+        Object.assign(item.adjustments, defaultAdjustments(), {
+          natural: { exposure: 8, contrast: 6, shadows: 8, saturation: 4, sharpen: 18 },
+          tech: { exposure: 4, contrast: 20, highlights: -12, saturation: 9, temperature: -18, sharpen: 28, vignette: 9 },
+          news: { exposure: 6, contrast: 14, shadows: 10, saturation: 18, temperature: 10, sharpen: 21 }
+        }[template.adjustment]);
+        item.layers.title.color = template.title;
+        item.layers.subtitle.color = template.subtitle;
+        item.layers.badge.color = template.accent;
+        item.layers.gradient.mode = template.gradient;
+        item.layers.gradient.enabled = true;
+        item.layers.title.enabled = !!item.layers.title.text;
+        item.layers.subtitle.enabled = !!item.layers.subtitle.text;
+        item.layers.badge.enabled = !!item.layers.badge.text;
+        syncInspectorFromItem(); render(); markDirty();
+        showToast(item.layers.title.text ? '品牌模板已应用' : '模板已应用，输入标题后即可显示图层');
+      }
+
+      Object.entries(ADJUSTMENT_CONTROLS).forEach(([key, id]) => {
+        $(id).addEventListener('input', event => {
+          const item = currentItem(); if (!item) return;
+          item.adjustments[key] = Number(event.target.value);
+          if (key === 'saturation' && item.adjustments.monochrome && Number(event.target.value) > -100) item.adjustments.monochrome = false;
+          document.querySelector(`[data-adjustment="${key}"] strong`).textContent = event.target.value;
+          render(); markDirty();
+        });
+      });
+      document.querySelectorAll('[data-adjust-preset]').forEach(button => button.addEventListener('click', () => applyAdjustmentPreset(button.dataset.adjustPreset)));
+      document.querySelectorAll('[data-template]').forEach(button => button.addEventListener('click', () => applyBrandTemplate(button.dataset.template)));
+      $('resetAdjustments').addEventListener('click', () => {
+        const item = currentItem(); if (!item) return;
+        item.adjustments = defaultAdjustments(); syncInspectorFromItem(); render(); markDirty();
+      });
+
+      const layerBindings = [
+        ['titleText', item => item.layers.title.text = $('titleText').value],
+        ['subtitleText', item => item.layers.subtitle.text = $('subtitleText').value],
+        ['badgeText', item => item.layers.badge.text = $('badgeText').value],
+        ['gradientMode', item => item.layers.gradient.mode = $('gradientMode').value],
+        ['layerTitleEnabled', item => item.layers.title.enabled = $('layerTitleEnabled').checked],
+        ['layerSubtitleEnabled', item => item.layers.subtitle.enabled = $('layerSubtitleEnabled').checked],
+        ['layerBadgeEnabled', item => item.layers.badge.enabled = $('layerBadgeEnabled').checked],
+        ['layerGradientEnabled', item => item.layers.gradient.enabled = $('layerGradientEnabled').checked],
+        ['layerLogoEnabled', item => item.layers.logo.enabled = $('layerLogoEnabled').checked]
+      ];
+      layerBindings.forEach(([id, setter]) => $(id).addEventListener(id.includes('Text') ? 'input' : 'change', () => {
+        const item = currentItem(); if (!item) return; setter(item); render(); markDirty();
+      }));
+
+      function bindColor(colorId, textId, setter) {
+        $(colorId).addEventListener('input', () => {
+          const item = currentItem(); if (!item) return; $(textId).value = $(colorId).value; setter(item, $(colorId).value); render(); markDirty();
+        });
+        $(textId).addEventListener('change', () => {
+          const value = $(textId).value.trim();
+          if (!/^#[0-9a-f]{6}$/i.test(value)) return showToast('颜色值需为 #RRGGBB', true);
+          const item = currentItem(); if (!item) return; $(colorId).value = value; setter(item, value); render(); markDirty();
+        });
+      }
+      bindColor('titleColor', 'titleColorText', (item, value) => item.layers.title.color = value);
+      bindColor('accentColor', 'accentColorText', (item, value) => item.layers.badge.color = value);
+      $('logoOpacity').addEventListener('input', () => {
+        const item = currentItem(); if (!item) return;
+        item.layers.logo.opacity = Number($('logoOpacity').value) / 100;
+        $('logoOpacityNumber').textContent = $('logoOpacity').value; render(); markDirty();
+      });
+      $('logoUploadBtn').addEventListener('click', () => $('logoInput').click());
+      $('logoInput').addEventListener('change', async () => {
+        const file = $('logoInput').files?.[0]; const item = currentItem(); if (!file || !item) return;
+        item.layers.logo.dataUrl = await blobToDataUrl(file);
+        item.layers.logo.enabled = true; hydrateLogoImage(item); syncInspectorFromItem(); markDirty(); showToast('Logo 已加入当前封面');
+        $('logoInput').value = '';
+      });
+      $('clearLogoBtn').addEventListener('click', () => {
+        const item = currentItem(); if (!item) return;
+        Object.assign(item.layers.logo, { enabled: false, dataUrl: '', image: null }); syncInspectorFromItem(); render(); markDirty();
+      });
+
+      $('backgroundMode').addEventListener('change', async () => {
+        const item = currentItem(); if (!item) return;
+        item.background.mode = $('backgroundMode').value;
+        if (item.background.mode !== 'none' && !item.background.maskCanvas) await generateBackgroundMask(item);
+        render(); markDirty();
+      });
+      $('backgroundTolerance').addEventListener('input', () => {
+        const item = currentItem(); if (!item) return;
+        item.background.tolerance = Number($('backgroundTolerance').value);
+        item.background.maskCanvas = null; item.background.status = 'stale';
+        $('backgroundToleranceNumber').textContent = $('backgroundTolerance').value;
+        $('invertMaskBtn').disabled = true; render(); markDirty();
+      });
+      $('backgroundFeather').addEventListener('input', () => {
+        const item = currentItem(); if (!item) return;
+        item.background.feather = Number($('backgroundFeather').value);
+        $('backgroundFeatherNumber').textContent = $('backgroundFeather').value; render(); markDirty();
+      });
+      $('analyzeBackgroundBtn').addEventListener('click', () => {
+        const item = currentItem(); if (item) generateBackgroundMask(item).catch(() => showToast('背景分析失败，请尝试降低图片尺寸', true));
+      });
+      $('invertMaskBtn').addEventListener('click', () => {
+        const item = currentItem(); if (!item?.background.maskCanvas) return;
+        item.background.inverted = !item.background.inverted;
+        generateBackgroundMask(item).catch(() => showToast('蒙版反选失败', true));
+      });
+
+      $('reviewStatus').addEventListener('change', () => {
+        const item = currentItem(); if (!item) return; item.reviewStatus = $('reviewStatus').value; refreshAssets(); markDirty();
+      });
+      $('versionName').addEventListener('change', () => {
+        const item = currentItem(); if (!item) return; item.versionName = $('versionName').value.trim() || 'A'; refreshAssets(); markDirty();
+      });
+      $('createVersionBtn').addEventListener('click', createVersion);
+      $('compareVersionsBtn').addEventListener('click', () => { renderVersionDialog(); $('versionDialog').showModal(); });
+      $('closeVersions').addEventListener('click', () => $('versionDialog').close());
+      $('batchApplyBtn').addEventListener('click', () => $('batchDialog').showModal());
+      $('closeBatch').addEventListener('click', () => $('batchDialog').close());
+      $('cancelBatch').addEventListener('click', () => $('batchDialog').close());
+      $('confirmBatch').addEventListener('click', applyBatchRules);
+
+      $('superResEnabled').checked = saved.superResEnabled !== false;
+      $('superResStrength').value = saved.superResStrength || 35;
+      $('superResStrengthNumber').textContent = $('superResStrength').value;
+      $('gpuStatus').textContent = navigator.gpu ? 'WebGPU 可用 · 仅在原图不足时启用增强' : '当前浏览器将使用高质量 Canvas 回退';
+      $('superResEnabled').addEventListener('change', () => { persistSettings(); renderQualityStatus(currentItem()); });
+      $('superResStrength').addEventListener('input', () => {
+        $('superResStrengthNumber').textContent = $('superResStrength').value; persistSettings();
+      });
+
+      $('projectBtn').addEventListener('click', () => { updateProjectSummary(); $('projectDialog').showModal(); });
+      $('closeProject').addEventListener('click', () => $('projectDialog').close());
+      $('saveProjectNow').addEventListener('click', () => saveProjectToIdb().then(() => showToast('项目已保存到本机')).catch(() => showToast('项目保存失败', true)));
+      $('restoreProjectBtn').addEventListener('click', async () => {
+        try { const payload = await idbRequest('readonly', store => store.get('autosave')); await hydrateProject(payload); $('projectDialog').close(); showToast('本机项目已恢复'); }
+        catch (error) { showToast(error?.message || '项目恢复失败', true); }
+      });
+      $('exportProjectBtn').addEventListener('click', async () => {
+        if (!items.length) return showToast('请先添加图片', true);
+        const payload = projectPayload();
+        for (let i = 0; i < payload.items.length; i++) { payload.items[i].dataUrl = await blobToDataUrl(items[i].file); delete payload.items[i].blob; }
+        triggerDownload(new Blob([JSON.stringify(payload)], { type: 'application/json' }), `PConline-cover-project-${new Date().toISOString().slice(0, 10)}.json`);
+        showToast('项目文件已导出');
+      });
+      $('importProjectBtn').addEventListener('click', () => $('projectInput').click());
+      $('projectInput').addEventListener('change', async () => {
+        const file = $('projectInput').files?.[0]; if (!file) return;
+        try { await hydrateProject(JSON.parse(await file.text())); markDirty(); $('projectDialog').close(); showToast('项目已导入'); }
+        catch (error) { showToast(error?.message || '项目文件无效', true); }
+        $('projectInput').value = '';
+      });
+
       function buildPresetGrid() {
-        $('presetGrid').innerHTML = PRESETS.map(p => `
+        const item = currentItem();
+        const original = originalPresetFor(item);
+        $('presetGrid').innerHTML = `
+          <button type="button" class="preset original-preset${isOriginalMode() ? ' active' : ''}" data-id="original" aria-pressed="${isOriginalMode()}">
+            <strong>原图模式 <span class="mode-badge">推荐起点</span></strong>
+            <span>${item ? `${original.w} × ${original.h}` : '上传后自动匹配尺寸'}</span>
+            <span class="ratio-tag">完整显示，不裁切</span>
+          </button>
+          <div class="preset-divider"><span>官网裁切规格</span></div>` + PRESETS.map(p => `
           <button type="button" class="preset${p.id === activePreset.id ? ' active' : ''}" data-id="${p.id}" aria-pressed="${p.id === activePreset.id}">
             <strong>${p.name}</strong>
             <span>${p.w} × ${p.h}</span>
@@ -1347,9 +2273,11 @@
           </button>`).join('');
         document.querySelectorAll('.preset').forEach(btn => {
           btn.addEventListener('click', () => {
-            activePreset = PRESETS.find(p => p.id === btn.dataset.id);
+            activePreset = btn.dataset.id === 'original' ? originalPresetFor(currentItem()) : PRESETS.find(p => p.id === btn.dataset.id);
             document.querySelectorAll('.preset').forEach(option => option.setAttribute('aria-pressed', String(option.dataset.id === activePreset.id)));
             render();
+            updateAvailability();
+            showToast(isOriginalMode() ? '已返回完整原图预览' : `已进入「${activePreset.name}」裁切`);
           });
         });
       }
@@ -1359,6 +2287,8 @@
         $('queueFootCount').textContent = `${items.length} 张素材`;
         $('assetList').innerHTML = '';
         items.forEach((item, index) => {
+          ensureItemState(item);
+          const reviewLabel = item.reviewStatus === 'approved' ? '已通过' : item.reviewStatus === 'review' ? '待检查' : '待处理';
           const row = document.createElement('div');
           row.className = 'asset-row' + (index === activeIndex ? ' active' : '');
           row.innerHTML = `
@@ -1366,7 +2296,8 @@
               <img src="${item.url}" alt="${escapeHtml(item.name)} 缩略图">
               <span>
                 <span class="asset-name">${escapeHtml(item.name)}</span>
-                <span class="asset-meta">${item.img.naturalWidth} × ${item.img.naturalHeight}</span>
+                <span class="asset-meta">${item.img.naturalWidth} × ${item.img.naturalHeight}<span class="asset-review ${item.reviewStatus}">${reviewLabel}</span></span>
+                <span class="version-chip">版本 ${escapeHtml(item.versionName)}</span>
               </span>
             </button>
             <button class="remove-btn" title="移除" aria-label="移除 ${escapeHtml(item.name)}">×</button>`;
@@ -1383,14 +2314,17 @@
 
       function selectItem(index) {
         activeIndex = index;
+        if (isOriginalMode()) activePreset = originalPresetFor(currentItem());
         $('emptyState').classList.toggle('hidden', !!currentItem());
+        buildPresetGrid();
         refreshAssets();
         render();
+        syncInspectorFromItem();
       }
 
       function removeItem(index) {
         const [removed] = items.splice(index, 1);
-        if (removed) URL.revokeObjectURL(removed.url);
+        if (removed && !items.some(item => item.url === removed.url)) URL.revokeObjectURL(removed.url);
         if (!items.length) activeIndex = -1;
         else if (activeIndex >= items.length) activeIndex = items.length - 1;
         else if (index < activeIndex) activeIndex--;
@@ -1399,13 +2333,18 @@
           $('currentName').textContent = '尚未选择图片';
           $('currentMeta').textContent = '支持 JPG / PNG / WebP / GIF 静态帧';
         }
+        if (isOriginalMode()) activePreset = originalPresetFor(currentItem());
+        buildPresetGrid();
         refreshAssets();
         render();
+        syncInspectorFromItem();
+        markDirty();
       }
 
       async function addFiles(fileList) {
         const files = [...fileList].filter(f => f.type.startsWith('image/'));
         if (!files.length) return showToast('没有识别到可用图片', true);
+        const wasEmpty = items.length === 0;
         let added = 0;
         for (const file of files) {
           try {
@@ -1416,21 +2355,26 @@
               img.onerror = reject;
               img.src = url;
             });
-            items.push({ file, url, img, name: file.name.replace(/\.[^.]+$/, ''), crops: new Map() });
+            items.push(ensureItemState({ file, url, img, name: file.name.replace(/\.[^.]+$/, ''), crops: new Map() }));
             added++;
           } catch {
             showToast(`${file.name} 读取失败`, true);
           }
         }
         if (activeIndex < 0 && items.length) activeIndex = 0;
+        if (wasEmpty && currentItem()) activateOriginalMode(currentItem());
         $('emptyState').classList.toggle('hidden', !!currentItem());
+        buildPresetGrid();
         refreshAssets();
         render();
+        syncInspectorFromItem();
+        markDirty();
         if (added) showToast(`已加入 ${added} 张图片`);
       }
 
       function updateAvailability() {
         const disabled = !items.length || busy;
+        const cropDisabled = disabled || isOriginalMode();
         const unsafeOutput = !!currentItem() && !!validateOutputSize();
         $('downloadCurrent').disabled = disabled || unsafeOutput;
         $('downloadPresetZip').disabled = disabled;
@@ -1438,7 +2382,205 @@
         $('preflightBtn').disabled = disabled;
         $('preflightExport').disabled = disabled;
         $('pixelInspectBtn').disabled = disabled || unsafeOutput;
-        document.querySelectorAll('.position-grid button').forEach(button => { button.disabled = disabled; });
+        document.querySelectorAll('.position-grid button').forEach(button => { button.disabled = cropDisabled; });
+        ['rotateLeft', 'rotateRight', 'flipX', 'resetBtn'].forEach(id => { $(id).disabled = cropDisabled; });
+        $('zoomRange').disabled = cropDisabled;
+      }
+
+      function loadImageFromUrl(url) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = reject;
+          image.src = url;
+        });
+      }
+
+      function blobToDataUrl(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      function dataUrlToBlob(dataUrl) {
+        const [header, payload] = dataUrl.split(',');
+        const mime = header.match(/data:([^;]+)/)?.[1] || 'application/octet-stream';
+        const bytes = atob(payload);
+        const array = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) array[i] = bytes.charCodeAt(i);
+        return new Blob([array], { type: mime });
+      }
+
+      function openProjectDb() {
+        if (projectDbPromise) return projectDbPromise;
+        projectDbPromise = new Promise((resolve, reject) => {
+          const request = indexedDB.open('pconline-cover-studio', 1);
+          request.onupgradeneeded = () => request.result.createObjectStore('projects');
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        return projectDbPromise;
+      }
+
+      function idbRequest(mode, action) {
+        return openProjectDb().then(db => new Promise((resolve, reject) => {
+          const tx = db.transaction('projects', mode);
+          const request = action(tx.objectStore('projects'));
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        }));
+      }
+
+      function serializeItem(item, includeBlob = true) {
+        ensureItemState(item);
+        return {
+          id: item.id, sourceId: item.sourceId, versionGroup: item.versionGroup,
+          versionName: item.versionName, reviewStatus: item.reviewStatus, name: item.name,
+          blob: includeBlob ? item.file : undefined,
+          type: item.file?.type || 'image/png',
+          crops: [...item.crops.entries()], focus: item.focus || null,
+          adjustments: clonePlain(item.adjustments), layers: clonePlain(item.layers),
+          background: { ...clonePlain(item.background), maskCanvas: undefined, status: 'idle' }
+        };
+      }
+
+      function projectPayload() {
+        return {
+          version: PROJECT_VERSION, updatedAt: new Date().toISOString(), activeIndex,
+          activePresetId: activePreset.id, outputScale,
+          items: items.map(item => serializeItem(item))
+        };
+      }
+
+      async function saveProjectToIdb() {
+        await idbRequest('readwrite', store => store.put(projectPayload(), 'autosave'));
+        $('saveState').dataset.state = 'saved';
+        $('saveState').textContent = '已自动保存到本机';
+        updateProjectSummary();
+      }
+
+      async function hydrateProject(payload) {
+        if (!payload?.items?.length) throw new Error('项目中没有可恢复的图片');
+        const restored = [];
+        for (const record of payload.items) {
+          const blob = record.blob || (record.dataUrl ? dataUrlToBlob(record.dataUrl) : null);
+          if (!blob) continue;
+          const url = URL.createObjectURL(blob);
+          const img = await loadImageFromUrl(url);
+          restored.push(ensureItemState({ ...record, file: blob, url, img, crops: new Map(record.crops || []) }));
+        }
+        if (!restored.length) throw new Error('项目图片无法读取');
+        items.forEach(old => { if (!restored.some(item => item.url === old.url)) URL.revokeObjectURL(old.url); });
+        items = restored;
+        activeIndex = Math.max(0, Math.min(payload.activeIndex || 0, items.length - 1));
+        activePreset = payload.activePresetId === 'original'
+          ? originalPresetFor(items[activeIndex])
+          : (PRESETS.find(p => p.id === payload.activePresetId) || originalPresetFor(items[activeIndex]));
+        outputScale = [1, 2, 3].includes(payload.outputScale) ? payload.outputScale : outputScale;
+        document.querySelectorAll('.scale-option').forEach(option => option.classList.toggle('active', Number(option.dataset.scale) === outputScale));
+        $('scaleNumber').textContent = `${outputScale * 100}%`;
+        $('emptyState').classList.add('hidden');
+        refreshAssets(); buildPresetGrid(); syncInspectorFromItem(); render(); updateAvailability();
+      }
+
+      async function updateProjectSummary() {
+        if (!$('projectSummary')) return;
+        $('projectSummary').textContent = `${items.length} 张素材 · ${items.filter(i => i.reviewStatus === 'approved').length} 张已通过 · ${items.reduce((n, i) => n + (i.crops?.size || 0), 0)} 组构图`;
+        try {
+          const savedProject = await idbRequest('readonly', store => store.get('autosave'));
+          $('projectUpdated').textContent = savedProject?.updatedAt ? `最近保存：${new Date(savedProject.updatedAt).toLocaleString()}` : '尚无自动保存项目';
+          $('restoreProjectBtn').disabled = !savedProject?.items?.length;
+        } catch { $('projectUpdated').textContent = '当前浏览器不支持项目自动保存'; }
+      }
+
+      async function generateBackgroundMask(item) {
+        const sourceW = item.img.naturalWidth, sourceH = item.img.naturalHeight;
+        const scale = Math.min(1, MASK_MAX_EDGE / Math.max(sourceW, sourceH));
+        const w = Math.max(1, Math.round(sourceW * scale)), h = Math.max(1, Math.round(sourceH * scale));
+        const source = document.createElement('canvas'); source.width = w; source.height = h;
+        const sourceCtx = source.getContext('2d', { willReadFrequently: true });
+        sourceCtx.drawImage(item.img, 0, 0, w, h);
+        const pixels = sourceCtx.getImageData(0, 0, w, h).data;
+        const corner = Math.max(2, Math.round(Math.min(w, h) * .035));
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+          if ((x < corner || x >= w - corner) && (y < corner || y >= h - corner)) {
+            const p = (y * w + x) * 4; r += pixels[p]; g += pixels[p + 1]; b += pixels[p + 2]; count++;
+          }
+        }
+        r /= count; g /= count; b /= count;
+        const tolerance = item.background.tolerance * 2.6;
+        const visited = new Uint8Array(w * h); const queue = new Int32Array(w * h); let head = 0, tail = 0;
+        const seed = index => { if (!visited[index]) { visited[index] = 1; queue[tail++] = index; } };
+        for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+        for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
+        while (head < tail) {
+          const index = queue[head++], p = index * 4;
+          const distance = Math.hypot(pixels[p] - r, pixels[p + 1] - g, pixels[p + 2] - b);
+          if (distance > tolerance) { visited[index] = 2; continue; }
+          const x = index % w, y = (index / w) | 0;
+          if (x) seed(index - 1); if (x < w - 1) seed(index + 1);
+          if (y) seed(index - w); if (y < h - 1) seed(index + w);
+        }
+        const mask = document.createElement('canvas'); mask.width = w; mask.height = h;
+        const maskCtx = mask.getContext('2d'); const data = maskCtx.createImageData(w, h);
+        for (let i = 0; i < visited.length; i++) {
+          const foreground = visited[i] !== 1;
+          const alpha = (item.background.inverted ? !foreground : foreground) ? 255 : 0;
+          data.data[i * 4] = data.data[i * 4 + 1] = data.data[i * 4 + 2] = 255; data.data[i * 4 + 3] = alpha;
+        }
+        maskCtx.putImageData(data, 0, 0);
+        item.background.maskCanvas = mask; item.background.status = 'ready';
+        $('invertMaskBtn').disabled = false; render(); markDirty();
+        showToast('背景蒙版已在本机生成，可继续调节容差与羽化');
+      }
+
+      function copyCropMap(map) { return new Map([...map.entries()].map(([key, crop]) => [key, { ...crop }])); }
+
+      async function createVersion() {
+        const source = currentItem(); if (!source) return;
+        const siblingCount = items.filter(item => item.versionGroup === source.versionGroup).length;
+        const version = ensureItemState({
+          file: source.file, url: source.url, img: source.img, name: source.name,
+          sourceId: source.sourceId, versionGroup: source.versionGroup,
+          versionName: String.fromCharCode(65 + Math.min(25, siblingCount)), reviewStatus: 'draft',
+          crops: copyCropMap(source.crops), focus: source.focus ? { ...source.focus } : null,
+          adjustments: clonePlain(source.adjustments), layers: clonePlain(source.layers), background: clonePlain(source.background)
+        });
+        items.splice(activeIndex + 1, 0, version); activeIndex++;
+        refreshAssets(); syncInspectorFromItem(); render(); markDirty(); showToast(`已创建版本 ${version.versionName}`);
+      }
+
+      function renderVersionDialog() {
+        const source = currentItem(); if (!source) return;
+        const versions = items.filter(item => item.versionGroup === source.versionGroup);
+        $('versionSummary').textContent = `${versions.length} 个版本 · 点击任一版本继续编辑`;
+        const grid = $('versionGrid'); grid.innerHTML = '';
+        versions.forEach(version => {
+          const card = document.createElement('button'); card.className = 'version-card'; card.type = 'button';
+          const thumb = document.createElement('canvas');
+          drawTo(thumb.getContext('2d'), thumb, version, activePreset, cropFor(version), Math.min(1, 420 / activePreset.w));
+          const label = document.createElement('span'); label.innerHTML = `<strong>版本 ${escapeHtml(version.versionName)}</strong><small>${version.reviewStatus === 'approved' ? '已通过' : version.reviewStatus === 'review' ? '待检查' : '草稿'}</small>`;
+          card.append(thumb, label); card.addEventListener('click', () => { activeIndex = items.indexOf(version); $('versionDialog').close(); refreshAssets(); syncInspectorFromItem(); render(); });
+          grid.appendChild(card);
+        });
+      }
+
+      function applyBatchRules() {
+        const source = currentItem(); if (!source) return;
+        const targets = items.filter(item => item !== source);
+        targets.forEach(target => {
+          if ($('batchAdjustments').checked) target.adjustments = clonePlain(source.adjustments);
+          if ($('batchLayers').checked) { target.layers = clonePlain(source.layers); hydrateLogoImage(target); }
+          if ($('batchCurrentCrop').checked) target.crops.set(presetKey(activePreset), { ...cropFor(source) });
+          if ($('batchAllCrops').checked) target.crops = copyCropMap(source.crops);
+          if ($('batchBackground').checked) target.background = { ...clonePlain(source.background), maskCanvas: null, status: 'idle' };
+          if ($('batchStatus').checked) target.reviewStatus = source.reviewStatus;
+        });
+        $('batchDialog').close(); refreshAssets(); render(); markDirty(); showToast(`已应用到 ${targets.length} 张其他图片`);
       }
 
       function showToast(message, error = false) {
@@ -1471,6 +2613,24 @@
 
       canvas.addEventListener('pointerdown', e => {
         if (!currentItem()) return;
+        if (anchorMode) {
+          const item = currentItem();
+          const rect = canvas.getBoundingClientRect();
+          item.focus = presetPointToSource(item, activePreset, cropFor(item), {
+            x: (e.clientX - rect.left) / rect.width * activePreset.w,
+            y: (e.clientY - rect.top) / rect.height * activePreset.h
+          });
+          anchorMode = false;
+          stageShell.classList.remove('anchor-mode');
+          render();
+          markDirty();
+          showToast('主体锚点已设置');
+          return;
+        }
+        if (isOriginalMode()) {
+          showToast('当前为完整原图预览，选择官网规格后即可拖动裁切');
+          return;
+        }
         canvas.setPointerCapture(e.pointerId);
         const item = currentItem();
         pointer = { id: e.pointerId, x: e.clientX, y: e.clientY, before: cropSnapshot(cropFor(item)), item, preset: activePreset };
@@ -1494,7 +2654,7 @@
       canvas.addEventListener('pointerup', endPointer);
       canvas.addEventListener('pointercancel', endPointer);
       canvas.addEventListener('wheel', e => {
-        if (!currentItem()) return;
+        if (!currentItem() || isOriginalMode()) return;
         e.preventDefault();
         const item = currentItem();
         const crop = cropFor(item);
@@ -1550,6 +2710,35 @@
           crop.y = button.dataset.row === 'top' ? maxY : button.dataset.row === 'bottom' ? -maxY : 0;
         });
       }));
+
+      $('setAnchorBtn').addEventListener('click', () => {
+        if (!currentItem()) return;
+        anchorMode = !anchorMode;
+        stageShell.classList.toggle('anchor-mode', anchorMode);
+        renderAnchorStatus(currentItem());
+        if (anchorMode) showToast('请在画布中点击主体位置');
+      });
+      $('centerAnchorBtn').addEventListener('click', () => {
+        const item = currentItem(); if (!item?.focus) return;
+        const before = cropSnapshot(cropFor(item));
+        centerFocusInPreset(item, activePreset, cropFor(item));
+        commitHistory(before, item);
+        render(); markDirty();
+      });
+      $('syncGroupBtn').addEventListener('click', () => {
+        const item = currentItem(); if (!item?.focus) return;
+        const reference = cropSnapshot(cropFor(item));
+        const ratio = activePreset.w / activePreset.h;
+        const targets = PRESETS.filter(preset => Math.abs(preset.w / preset.h - ratio) < .08);
+        targets.forEach(preset => centerFocusInPreset(item, preset, reference));
+        render(); markDirty(); showToast(`已同步 ${targets.length} 个相近比例规格`);
+      });
+      $('syncAllBtn').addEventListener('click', () => {
+        const item = currentItem(); if (!item?.focus) return;
+        const reference = cropSnapshot(cropFor(item));
+        PRESETS.forEach(preset => centerFocusInPreset(item, preset, reference));
+        render(); markDirty(); showToast(`已同步全部 ${PRESETS.length} 个官网规格`);
+      });
 
       function toggleGuide(type) {
         const grid = type === 'grid';
@@ -1636,13 +2825,95 @@
         return `${safeName(item.name)}-${suffix}.${extension}`;
       }
 
+      function canvasUpscale(source, width, height) {
+        const out = document.createElement('canvas'); out.width = width; out.height = height;
+        const context = out.getContext('2d');
+        context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+        context.drawImage(source, 0, 0, width, height);
+        return out;
+      }
+
+      async function webgpuUpscale(source, width, height, strength) {
+        if (!navigator.gpu) throw new Error('WebGPU unavailable');
+        const adapter = await navigator.gpu.requestAdapter();
+        if (!adapter) throw new Error('WebGPU adapter unavailable');
+        const device = await adapter.requestDevice();
+        const out = document.createElement('canvas'); out.width = width; out.height = height;
+        const context = out.getContext('webgpu');
+        const format = navigator.gpu.getPreferredCanvasFormat();
+        context.configure({ device, format, alphaMode: 'premultiplied' });
+        const texture = device.createTexture({
+          size: [source.width, source.height], format: 'rgba8unorm',
+          usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
+        });
+        device.queue.copyExternalImageToTexture({ source }, { texture }, [source.width, source.height]);
+        const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
+        const uniform = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+        device.queue.writeBuffer(uniform, 0, new Float32Array([source.width, source.height, Math.max(0, Math.min(1, strength)), 0]));
+        const module = device.createShaderModule({ code: `
+          struct Params { size: vec2f, strength: f32, pad: f32 }
+          @group(0) @binding(0) var samp: sampler;
+          @group(0) @binding(1) var tex: texture_2d<f32>;
+          @group(0) @binding(2) var<uniform> params: Params;
+          struct Out { @builtin(position) pos: vec4f, @location(0) uv: vec2f }
+          @vertex fn vs(@builtin(vertex_index) index: u32) -> Out {
+            var positions = array<vec2f, 3>(vec2f(-1., -1.), vec2f(3., -1.), vec2f(-1., 3.));
+            var uvs = array<vec2f, 3>(vec2f(0., 1.), vec2f(2., 1.), vec2f(0., -1.));
+            var out: Out; out.pos = vec4f(positions[index], 0., 1.); out.uv = uvs[index]; return out;
+          }
+          @fragment fn fs(in: Out) -> @location(0) vec4f {
+            let step = 1. / params.size;
+            let center = textureSample(tex, samp, in.uv);
+            let blur = (textureSample(tex, samp, in.uv + vec2f(step.x, 0.)) + textureSample(tex, samp, in.uv - vec2f(step.x, 0.)) + textureSample(tex, samp, in.uv + vec2f(0., step.y)) + textureSample(tex, samp, in.uv - vec2f(0., step.y))) * .25;
+            return vec4f(clamp(center.rgb + (center.rgb - blur.rgb) * params.strength * .7, vec3f(0.), vec3f(1.)), center.a);
+          }` });
+        const pipeline = device.createRenderPipeline({
+          layout: 'auto', vertex: { module, entryPoint: 'vs' }, fragment: { module, entryPoint: 'fs', targets: [{ format }] }, primitive: { topology: 'triangle-list' }
+        });
+        const bindGroup = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: [
+          { binding: 0, resource: sampler }, { binding: 1, resource: texture.createView() }, { binding: 2, resource: { buffer: uniform } }
+        ] });
+        const encoder = device.createCommandEncoder();
+        const pass = encoder.beginRenderPass({ colorAttachments: [{ view: context.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: { r: 0, g: 0, b: 0, a: 0 } }] });
+        pass.setPipeline(pipeline); pass.setBindGroup(0, bindGroup); pass.draw(3); pass.end();
+        device.queue.submit([encoder.finish()]); await device.queue.onSubmittedWorkDone();
+        return out;
+      }
+
+      async function renderEnhancedOutput(item, preset) {
+        const target = outputDimensions(preset);
+        const report = qualityReport(item, preset);
+        const usefulScale = Math.max(1, Math.min(outputScale, outputScale / Math.max(1, report.effectiveScale)));
+        if (!$('superResEnabled').checked || usefulScale >= outputScale - .01) {
+          const direct = document.createElement('canvas');
+          drawTo(direct.getContext('2d'), direct, item, preset, cropFor(item, preset), outputScale);
+          lastEnhanceEngine = '原生采样'; return direct;
+        }
+        const base = document.createElement('canvas');
+        drawTo(base.getContext('2d'), base, item, preset, cropFor(item, preset), usefulScale, { skipLayers: true });
+        let out;
+        try {
+          out = await webgpuUpscale(base, target.width, target.height, Number($('superResStrength').value) / 100);
+          lastEnhanceEngine = 'WebGPU';
+        } catch {
+          out = canvasUpscale(base, target.width, target.height); lastEnhanceEngine = 'Canvas 回退';
+        }
+        let overlayCtx = out.getContext('2d');
+        if (!overlayCtx) { out = canvasUpscale(out, target.width, target.height); overlayCtx = out.getContext('2d'); }
+        drawOverlays(overlayCtx, out, item);
+        $('gpuStatus').textContent = `${lastEnhanceEngine} · 从 ${base.width}×${base.height} 增强到 ${target.width}×${target.height}`;
+        return out;
+      }
+
       async function canvasBlob(item, preset) {
         const outputError = validateOutputSize(preset);
         if (outputError) throw new Error(`无法导出：${outputError}`);
-        const out = document.createElement('canvas');
-        const outCtx = out.getContext('2d', { alpha: false });
-        drawTo(outCtx, out, item, preset, cropFor(item, preset), outputScale);
+        let out = await renderEnhancedOutput(item, preset);
         const mime = $('formatSelect').value;
+        if (mime === 'image/jpeg' && item.background.mode === 'remove') {
+          const flattened = document.createElement('canvas'); flattened.width = out.width; flattened.height = out.height;
+          const flattenedCtx = flattened.getContext('2d'); flattenedCtx.fillStyle = '#ffffff'; flattenedCtx.fillRect(0, 0, out.width, out.height); flattenedCtx.drawImage(out, 0, 0); out = flattened;
+        }
         const requestedQuality = Number($('qualityRange').value) / 100;
         const encode = quality => new Promise((resolve, reject) => out.toBlob(
           blob => blob ? resolve(blob) : reject(new Error('导出失败')), mime, quality
@@ -1702,7 +2973,7 @@
           const thumb = document.createElement('canvas');
           thumb.setAttribute('aria-label', `${preset.name} 裁切预览`);
           const thumbScale = Math.min(1, 300 / preset.w, 170 / preset.h);
-          drawTo(thumb.getContext('2d', { alpha: false }), thumb, item, preset, crop, thumbScale);
+          drawTo(thumb.getContext('2d'), thumb, item, preset, crop, thumbScale);
           preview.appendChild(thumb);
 
           const info = document.createElement('div');
@@ -1732,7 +3003,7 @@
           return showToast('1:1 检查视图最高支持 32 MP，请降低尺寸或倍率', true);
         }
         const out = $('pixelCanvas');
-        drawTo(out.getContext('2d', { alpha: false }), out, item, activePreset, cropFor(item), outputScale);
+        drawTo(out.getContext('2d'), out, item, activePreset, cropFor(item), outputScale);
         $('pixelMeta').textContent = `${activePreset.name} · ${output.width} × ${output.height} · 按实际导出像素显示`;
         $('pixelDialog').showModal();
         $('pixelViewer').scrollTo({ left: 0, top: 0 });
@@ -1825,12 +3096,14 @@
         for (let i = 0; i < items.length; i++) {
           showToast(`正在处理 ${i + 1}/${items.length}：${items[i].name}`);
           setExportProgress(`正在处理：${items[i].name}`, i, items.length);
-          const result = await canvasBlob(items[i], activePreset);
-          entries.push({ name: outputFileName(items[i], activePreset, ext), blob: result.blob });
+          const itemPreset = isOriginalMode() ? originalPresetFor(items[i]) : activePreset;
+          const result = await canvasBlob(items[i], itemPreset);
+          entries.push({ name: outputFileName(items[i], itemPreset, ext), blob: result.blob });
           setExportProgress(`已处理 ${i + 1}/${items.length}`, i + 1, items.length);
         }
         const zip = await makeZip(entries);
-        triggerDownload(zip, `PConline-${safeName(activePreset.name)}-${activePreset.w * outputScale}x${activePreset.h * outputScale}.zip`);
+        const zipLabel = isOriginalMode() ? '原图处理结果' : `${safeName(activePreset.name)}-${activePreset.w * outputScale}x${activePreset.h * outputScale}`;
+        triggerDownload(zip, `PConline-${zipLabel}.zip`);
         showToast(`已打包 ${entries.length} 张图片`);
       }));
 
