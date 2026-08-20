@@ -980,6 +980,10 @@
     .mockup-value { color: #a5b4fc; font-size: 10px; font-variant-numeric: tabular-nums; }
     .mockup-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
     .mockup-choice-grid > *, .mockup-swatches > *, #mockupRatios > * { min-width: 0; }
+    .mockup-layout-label {
+      grid-column: 1 / -1; margin: 3px 0 -1px; color: #7783a3; font-size: 8px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+    }
     .mockup-choice {
       min-height: 48px; padding: 8px 9px; border: 1px solid #334166; border-radius: 10px;
       color: #d8ddf1; background: #18213a; cursor: pointer; text-align: left; transition: .2s var(--ease);
@@ -1003,6 +1007,7 @@
     .phone-model.active { color: #eef2ff; border-color: #818cf8; background: rgba(99,102,241,.2); box-shadow: inset 0 0 0 1px rgba(129,140,248,.14); }
     .phone-model strong { display: block; font-size: 9px; line-height: 1.25; }
     .phone-model small { display: block; margin-top: 3px; color: #8f9abb; font-size: 8px; line-height: 1.25; }
+    .phone-thumb { justify-self: center; display: block; width: 26px; height: 48px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.35)); }
     .phone-mini {
       position: relative; justify-self: center; width: 21px; height: 43px; border: 2px solid var(--device-color, #8891a8);
       border-radius: var(--device-radius, 6px); background: linear-gradient(155deg,#20245a,#3d55d5 56%,#17b9b1);
@@ -1042,6 +1047,16 @@
       .mockup-layout { width: 100%; overflow: hidden; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(260px, 46%) minmax(0, 1fr); }
       .mockup-preview { min-width: 0; overflow: hidden; padding: 12px; }
       .mockup-controls { border-left: 0; border-top: 1px solid #293452; }
+    }
+    @media (max-width: 880px) and (max-height: 520px) {
+      .mockup-dialog .dialog-head { padding: 9px 56px 9px 14px; }
+      .mockup-dialog .dialog-head .eyebrow { margin-bottom: 2px; }
+      .mockup-dialog .dialog-head h2 { font-size: 16px; }
+      .mockup-dialog .dialog-head p:not(.eyebrow) { display: none; }
+      .mockup-dialog .icon-close { top: 8px; right: 10px; }
+      .mockup-layout { grid-template-columns: minmax(0, 1fr) minmax(260px, 36%); grid-template-rows: minmax(0, 1fr); }
+      .mockup-preview { padding: 8px; }
+      .mockup-controls { border-top: 0; border-left: 1px solid #293452; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1524,22 +1539,31 @@
       <div class="mockup-preview"><canvas id="mockupCanvas" aria-label="带壳截图预览"></canvas></div>
       <div class="mockup-controls">
         <section class="mockup-section">
-          <h3>设备外壳</h3>
+          <h3>展示布局</h3>
           <div class="mockup-choice-grid" id="mockupShells">
+            <span class="mockup-layout-label">基础样机</span>
             <button class="mockup-choice active" type="button" data-shell="browser"><strong>浏览器窗口</strong><span>适合网页与横幅</span></button>
             <button class="mockup-choice" type="button" data-shell="desktop"><strong>桌面应用</strong><span>沉浸式深色标题栏</span></button>
-            <button class="mockup-choice" type="button" data-shell="phone"><strong>旗舰手机</strong><span>4 款真实比例样机</span></button>
+            <button class="mockup-choice" type="button" data-shell="phone"><strong>手机样机</strong><span>开源原始素材外壳</span></button>
             <button class="mockup-choice" type="button" data-shell="card"><strong>极简卡片</strong><span>只保留圆角与阴影</span></button>
+            <span class="mockup-layout-label">实体设备</span>
+            <button class="mockup-choice" type="button" data-shell="asset-macbook"><strong>MacBook Pro</strong><span>真实透明 PNG 外壳</span></button>
+            <button class="mockup-choice" type="button" data-shell="asset-ipad"><strong>iPad Pro 横屏</strong><span>适合页面与演示稿</span></button>
+            <button class="mockup-choice" type="button" data-shell="asset-imac"><strong>iMac Pro</strong><span>桌面页面大屏展示</span></button>
+            <span class="mockup-layout-label">场景组合</span>
+            <button class="mockup-choice" type="button" data-shell="browser-stack"><strong>叠层网页</strong><span>双窗口错位展示</span></button>
+            <button class="mockup-choice" type="button" data-shell="responsive-duo"><strong>响应式组合</strong><span>网页与手机同屏</span></button>
+            <button class="mockup-choice" type="button" data-shell="phone-duo"><strong>双机并列</strong><span>双手机焦点构图</span></button>
+            <button class="mockup-choice" type="button" data-shell="phone-fan"><strong>手机阵列</strong><span>三机扇形展示</span></button>
           </div>
           <div class="phone-model-picker" id="phoneModelPicker" hidden>
-            <div class="phone-model-head"><strong>选择手机型号</strong><span>依据官方正面结构绘制</span></div>
+            <div class="phone-model-head"><strong>选择手机素材</strong><span>FrameUp-Free · MIT</span></div>
             <div class="phone-model-grid" role="group" aria-label="手机样机型号">
-              <button class="phone-model active" type="button" data-phone-model="iphone17"><span class="phone-mini" aria-hidden="true"></span><span><strong>iPhone 17</strong><small>动态岛 · 6.3 英寸</small></span></button>
-              <button class="phone-model" type="button" data-phone-model="s26ultra"><span class="phone-mini" aria-hidden="true"></span><span><strong>Galaxy S26 Ultra</strong><small>方正机身 · 居中挖孔</small></span></button>
-              <button class="phone-model" type="button" data-phone-model="x300pro"><span class="phone-mini" aria-hidden="true"></span><span><strong>vivo X300 Pro</strong><small>圆润大 R 角 · 超窄四边</small></span></button>
-              <button class="phone-model" type="button" data-phone-model="findx9spro"><span class="phone-mini" aria-hidden="true"></span><span><strong>OPPO Find X9s Pro</strong><small>6.32 英寸 · 精巧直屏</small></span></button>
+              <button class="phone-model active" type="button" data-phone-model="iphone17pro"><img class="phone-thumb" src="assets/mockups/iphone-17-pro-max.svg" alt=""><span><strong>iPhone 17 Pro Max</strong><small>矢量框 · 462 × 978</small></span></button>
+              <button class="phone-model" type="button" data-phone-model="iphone11black"><img class="phone-thumb" src="assets/mockups/iphone-11-black.png" alt=""><span><strong>iPhone 11 Black</strong><small>写实透明 PNG</small></span></button>
+              <button class="phone-model" type="button" data-phone-model="galaxys9black"><img class="phone-thumb" src="assets/mockups/galaxy-s9-midnight-black.png" alt=""><span><strong>Galaxy S9 Black</strong><small>写实透明 PNG</small></span></button>
             </div>
-            <p class="phone-model-note">矢量外壳仅还原正面比例、边框与开孔特征，不使用或上传厂商版权图片。</p>
+            <p class="phone-model-note">样机素材来自 MIT 开源项目 FrameUp-Free，按原始画布与屏幕坐标嵌入，不再用近似比例重绘。</p>
           </div>
         </section>
         <section class="mockup-section">
@@ -1576,7 +1600,7 @@
             <button class="secondary" id="resetMockup" type="button">重置样式</button>
             <button class="primary" id="downloadMockup" type="button">下载高清带壳图</button>
           </div>
-          <p class="mockup-note">成片由浏览器本地 Canvas 生成。手机外壳会按屏幕比例居中填充当前画面，可能裁掉左右内容。</p>
+          <p class="mockup-note">成片由浏览器本地 Canvas 生成，设备外壳采用 FrameUp-Free 开源素材，场景组合在本地完成；手机屏幕会居中填充当前画面，可能裁掉左右内容。</p>
         </section>
       </div>
     </div>
@@ -1629,13 +1653,40 @@
       let projectDbPromise = null;
       let lastEnhanceEngine = 'Canvas';
       let mockupFrame = 0;
-      const PHONE_MODELS = {
-        iphone17: { name: 'iPhone 17', ratio: 71.5 / 149.6, corner: .16, screenCorner: .13, bezel: .034, cutout: 'island', frame: ['#aab0bb', '#343840'], buttonSide: 'both' },
-        s26ultra: { name: 'Galaxy S26 Ultra', ratio: 77.3 / 163.6, corner: .075, screenCorner: .055, bezel: .025, cutout: 'hole', frame: ['#77709b', '#302c45'], buttonSide: 'right' },
-        x300pro: { name: 'vivo X300 Pro', ratio: 75.48 / 161.98, corner: .145, screenCorner: .12, bezel: .027, cutout: 'hole', frame: ['#7ea2c4', '#2c435d'], buttonSide: 'right' },
-        findx9spro: { name: 'OPPO Find X9s Pro', ratio: 71.72 / 150.46, corner: .15, screenCorner: .125, bezel: .029, cutout: 'hole', frame: ['#d9916d', '#6e382b'], buttonSide: 'both' }
+      const MOCKUP_ASSETS = {
+        iphone17pro: { name: 'iPhone 17 Pro Max', path: 'assets/mockups/iphone-17-pro-max.svg', width: 462, height: 978, screen: { x: 11, y: 11, width: 440, height: 956 }, corner: 55 },
+        iphone11black: { name: 'iPhone 11 Black', path: 'assets/mockups/iphone-11-black.png', width: 619, height: 1200, screen: { x: 60, y: 60, width: 499, height: 1080 }, corner: 34 },
+        galaxys9black: { name: 'Galaxy S9 Black', path: 'assets/mockups/galaxy-s9-midnight-black.png', width: 572, height: 1200, screen: { x: 35, y: 84, width: 502, height: 1032 }, corner: 28 },
+        chrome: { name: 'Chrome', path: 'assets/mockups/browser-chrome-dark.svg', width: 1200, height: 800, screen: { x: 1, y: 52, width: 1198, height: 747 }, corner: 10 },
+        macbook: { name: 'MacBook Pro 15 Space Grey', path: 'assets/mockups/macbook-pro-15-space-grey.png', width: 1200, height: 742, screen: { x: 155, y: 93, width: 890, height: 556 }, corner: 18 },
+        ipad: { name: 'iPad Pro 13 Space Gray', path: 'assets/mockups/ipad-pro-13-space-gray-landscape.png', width: 1200, height: 938, screen: { x: 77, y: 77, width: 1046, height: 784 }, corner: 21 },
+        imac: { name: 'iMac Pro', path: 'assets/mockups/imac-pro.png', width: 1200, height: 999, screen: { x: 68, y: 71, width: 1064, height: 601 }, corner: 21 }
       };
-      const defaultMockupState = () => ({ shell: 'browser', phoneModel: 'iphone17', template: 'aurora', ratio: '16:9', scale: 82, padding: 8, radius: 18, shadow: 62, tilt: 0, offsetY: 0 });
+      const PHONE_MODELS = {
+        iphone17pro: MOCKUP_ASSETS.iphone17pro,
+        iphone11black: MOCKUP_ASSETS.iphone11black,
+        galaxys9black: MOCKUP_ASSETS.galaxys9black
+      };
+      const mockupAssetImages = new Map();
+      const loadMockupAsset = (id) => {
+        if (mockupAssetImages.has(id)) return mockupAssetImages.get(id);
+        const asset = MOCKUP_ASSETS[id];
+        const image = new Image();
+        image.decoding = 'async';
+        image.onload = () => scheduleMockupRender();
+        image.src = asset.path;
+        mockupAssetImages.set(id, image);
+        return image;
+      };
+      const waitForMockupAssets = () => Promise.all(Object.keys(MOCKUP_ASSETS).map(id => {
+        const image = loadMockupAsset(id);
+        if (image.complete) return image.naturalWidth ? Promise.resolve() : Promise.reject(new Error('样机素材加载失败，请刷新后重试'));
+        return new Promise((resolve, reject) => {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', () => reject(new Error('样机素材加载失败，请刷新后重试')), { once: true });
+        });
+      }));
+      const defaultMockupState = () => ({ shell: 'browser', phoneModel: 'iphone17pro', template: 'aurora', ratio: '16:9', scale: 82, padding: 8, radius: 18, shadow: 62, tilt: 0, offsetY: 0 });
       let mockupState = defaultMockupState();
 
       const saved = (() => {
@@ -3276,6 +3327,119 @@
         return source;
       }
 
+      function setMockupShadow(context, shadow, exporting, strength = 1) {
+        context.shadowColor = `rgba(3,6,18,${(.12 + shadow * .48 * strength).toFixed(2)})`;
+        context.shadowBlur = (12 + shadow * 66) * (exporting ? 1.5 : 1) * strength;
+        context.shadowOffsetY = (7 + shadow * 28) * (exporting ? 1.4 : 1) * strength;
+      }
+
+      function drawAssetMockup(context, artwork, assetId, options) {
+        const asset = MOCKUP_ASSETS[assetId];
+        const image = mockupAssetImages.get(assetId);
+        if (!asset || !image?.complete || !image.naturalWidth) return false;
+        const { centerX, centerY, desiredWidth, desiredHeight, maxWidth = Infinity, maxHeight = Infinity, rotation = 0, shadow, exporting } = options;
+        let assetScale = desiredWidth ? desiredWidth / asset.width : desiredHeight / asset.height;
+        assetScale = Math.min(assetScale, maxWidth / asset.width, maxHeight / asset.height);
+        const frameWidth = asset.width * assetScale, frameHeight = asset.height * assetScale;
+        const x = -frameWidth / 2, y = -frameHeight / 2;
+        const screenX = x + asset.screen.x * assetScale, screenY = y + asset.screen.y * assetScale;
+        const screenWidth = asset.screen.width * assetScale, screenHeight = asset.screen.height * assetScale;
+        const screenRadius = Math.max(0, asset.corner * assetScale);
+
+        context.save(); context.translate(centerX, centerY); context.rotate(rotation * Math.PI / 180);
+        context.fillStyle = '#03050a'; roundedRectPath(context, screenX, screenY, screenWidth, screenHeight, screenRadius); context.fill();
+        drawImageCover(context, artwork, screenX, screenY, screenWidth, screenHeight, screenRadius);
+        setMockupShadow(context, shadow, exporting);
+        context.drawImage(image, x, y, frameWidth, frameHeight);
+        context.restore();
+        return true;
+      }
+
+      function drawPhoneMockup(context, artwork, model, options) {
+        const { centerX, centerY, height, rotation = 0, shadow, exporting } = options;
+        const frameHeight = height;
+        const frameWidth = frameHeight * model.ratio;
+        const x = -frameWidth / 2, y = -frameHeight / 2;
+        const bezel = Math.max(exporting ? 10 : 5, frameWidth * model.bezel);
+        const deviceRadius = frameWidth * model.corner;
+        const screenRadius = frameWidth * model.screenCorner;
+
+        context.save(); context.translate(centerX, centerY); context.rotate(rotation * Math.PI / 180);
+        setMockupShadow(context, shadow, exporting);
+        const frameGradient = context.createLinearGradient(x, y, x + frameWidth, y + frameHeight);
+        frameGradient.addColorStop(0, model.frame[0]); frameGradient.addColorStop(.35, '#11131a'); frameGradient.addColorStop(1, model.frame[1]);
+        roundedRectPath(context, x, y, frameWidth, frameHeight, deviceRadius);
+        context.fillStyle = frameGradient; context.fill();
+        context.shadowColor = 'transparent';
+
+        const screenX = x + bezel, screenY = y + bezel;
+        const screenW = frameWidth - bezel * 2, screenH = frameHeight - bezel * 2;
+        drawImageCover(context, artwork, screenX, screenY, screenW, screenH, screenRadius);
+        context.fillStyle = 'rgba(3,4,8,.96)';
+        if (model.cutout === 'island') {
+          const islandW = frameWidth * .265, islandH = Math.max(exporting ? 10 : 5, frameHeight * .0175);
+          roundedRectPath(context, -islandW / 2, screenY + bezel * .7, islandW, islandH, islandH / 2); context.fill();
+          context.fillStyle = 'rgba(86,102,126,.52)'; context.beginPath();
+          context.arc(islandW * .34, screenY + bezel * .7 + islandH / 2, islandH * .22, 0, Math.PI * 2); context.fill();
+        } else {
+          const holeRadius = Math.max(exporting ? 4 : 2.5, frameWidth * .014);
+          context.beginPath(); context.arc(0, screenY + bezel * 1.05 + holeRadius, holeRadius, 0, Math.PI * 2); context.fill();
+          context.strokeStyle = 'rgba(255,255,255,.2)'; context.lineWidth = Math.max(.7, frameWidth / 700); context.stroke();
+        }
+
+        context.fillStyle = model.frame[1];
+        const buttonW = Math.max(exporting ? 3 : 1.5, frameWidth * .009);
+        const drawSideButton = (side, top, length) => {
+          const bx = side === 'left' ? x - buttonW * .45 : x + frameWidth - buttonW * .55;
+          roundedRectPath(context, bx, y + frameHeight * top, buttonW, frameHeight * length, buttonW / 2); context.fill();
+        };
+        if (model.buttonSide === 'both') { drawSideButton('left', .18, .055); drawSideButton('left', .28, .1); }
+        drawSideButton('right', model.cutout === 'island' ? .25 : .2, .12);
+
+        context.strokeStyle = 'rgba(255,255,255,.22)'; context.lineWidth = Math.max(1, frameWidth / 430);
+        roundedRectPath(context, x, y, frameWidth, frameHeight, deviceRadius); context.stroke();
+        context.strokeStyle = 'rgba(0,0,0,.45)'; context.lineWidth = Math.max(1, frameWidth / 520);
+        roundedRectPath(context, screenX, screenY, screenW, screenH, screenRadius); context.stroke();
+        context.restore();
+      }
+
+      function drawWindowMockup(context, artwork, options) {
+        const { centerX, centerY, width, type = 'browser', rotation = 0, shadow, exporting, radius, canvasWidth } = options;
+        const artworkRatio = artwork.width / artwork.height;
+        const chromeHeight = type === 'browser' ? Math.max(width * .035, exporting ? 36 : 18) : type === 'desktop' ? Math.max(width * .03, exporting ? 32 : 16) : 0;
+        const frameWidth = width, frameHeight = frameWidth / artworkRatio + chromeHeight;
+        const x = -frameWidth / 2, y = -frameHeight / 2;
+        const darkShell = type === 'desktop';
+
+        context.save(); context.translate(centerX, centerY); context.rotate(rotation * Math.PI / 180);
+        setMockupShadow(context, shadow, exporting);
+        roundedRectPath(context, x, y, frameWidth, frameHeight, radius);
+        context.fillStyle = darkShell ? '#121626' : '#f8fafc'; context.fill();
+        context.shadowColor = 'transparent';
+        if (chromeHeight) {
+          context.save(); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.clip();
+          context.fillStyle = darkShell ? '#151a2c' : '#f7f8fb'; context.fillRect(x, y, frameWidth, chromeHeight);
+          context.fillStyle = darkShell ? 'rgba(255,255,255,.25)' : 'rgba(15,23,42,.22)';
+          const dotR = Math.max(2, chromeHeight * .095);
+          [0, 1, 2].forEach(index => { context.beginPath(); context.arc(x + chromeHeight * .52 + index * dotR * 2.7, y + chromeHeight / 2, dotR, 0, Math.PI * 2); context.fill(); });
+          if (type === 'browser') {
+            const addressX = x + chromeHeight * 2.2, addressW = frameWidth - chromeHeight * 2.75;
+            roundedRectPath(context, addressX, y + chromeHeight * .25, addressW, chromeHeight * .5, chromeHeight * .25);
+            context.fillStyle = '#e9edf4'; context.fill();
+          } else {
+            context.fillStyle = 'rgba(255,255,255,.65)'; context.font = `600 ${Math.max(8, chromeHeight * .3)}px "Segoe UI Variable", sans-serif`;
+            context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText('PConline 封面工作台', 0, y + chromeHeight / 2);
+          }
+          context.restore();
+        }
+        const imageY = y + chromeHeight, imageH = frameHeight - chromeHeight;
+        context.save(); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.clip();
+        context.drawImage(artwork, x, imageY, frameWidth, imageH); context.restore();
+        context.strokeStyle = darkShell ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.12)';
+        context.lineWidth = Math.max(1, canvasWidth / 1600); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.stroke();
+        context.restore();
+      }
+
       function drawMockupCanvas(exporting = false) {
         const item = currentItem(); if (!item) return null;
         const out = exporting ? document.createElement('canvas') : $('mockupCanvas');
@@ -3290,108 +3454,67 @@
         const availableHeight = height - padding * 2;
         const scale = mockupState.scale / 100;
         const shell = mockupState.shell;
-        const phoneModel = PHONE_MODELS[mockupState.phoneModel] || PHONE_MODELS.iphone17;
-        const artworkRatio = activePreset.w / activePreset.h;
-        let frameWidth, frameHeight, chromeHeight = 0;
-        if (shell === 'phone') {
-          frameHeight = availableHeight * scale;
-          frameWidth = frameHeight * phoneModel.ratio;
-          if (frameWidth > availableWidth * scale) { frameWidth = availableWidth * scale; frameHeight = frameWidth / phoneModel.ratio; }
-        } else {
-          chromeHeight = shell === 'browser' ? Math.max(height * .035, 28) : shell === 'desktop' ? Math.max(height * .03, 24) : 0;
-          frameWidth = availableWidth * scale;
-          frameHeight = frameWidth / artworkRatio + chromeHeight;
-          if (frameHeight > availableHeight * scale) {
-            frameHeight = availableHeight * scale;
-            frameWidth = (frameHeight - chromeHeight) * artworkRatio;
-          }
-        }
-
-        const centerX = width / 2;
-        const centerY = height / 2 + height * (mockupState.offsetY / 100);
-        const x = -frameWidth / 2;
-        const y = -frameHeight / 2;
+        const centerX = width / 2, centerY = height / 2 + height * (mockupState.offsetY / 100);
         const radius = Math.max(0, mockupState.radius) * (exporting ? 2 : 1);
         const shadow = mockupState.shadow / 100;
-        const artwork = currentArtwork(shell === 'phone' ? frameWidth : frameWidth, exporting);
-
-        context.save(); context.translate(centerX, centerY); context.rotate(mockupState.tilt * Math.PI / 180);
-        context.shadowColor = `rgba(3,6,18,${(.14 + shadow * .5).toFixed(2)})`;
-        context.shadowBlur = (14 + shadow * 70) * (exporting ? 1.5 : 1);
-        context.shadowOffsetY = (8 + shadow * 30) * (exporting ? 1.4 : 1);
+        const tilt = mockupState.tilt;
+        const artwork = currentArtwork(availableWidth * scale, exporting);
+        const windowHeightFor = (windowWidth, type) => windowWidth / (artwork.width / artwork.height) + (type === 'browser' ? windowWidth * .035 : type === 'desktop' ? windowWidth * .03 : 0);
+        const fitWindowWidth = (desired, type, maxHeight = availableHeight) => {
+          const fitted = windowHeightFor(desired, type) > maxHeight ? desired * maxHeight / windowHeightFor(desired, type) : desired;
+          return Math.min(fitted, availableWidth);
+        };
+        const windowOptions = (cx, cy, desiredWidth, type, rotation, maxHeight = availableHeight) => ({
+          centerX: cx, centerY: cy, width: fitWindowWidth(desiredWidth, type, maxHeight), type,
+          rotation: rotation + tilt, shadow, exporting, radius, canvasWidth: width
+        });
+        const assetOptions = (cx, cy, size, rotation, maxWidth = availableWidth, maxHeight = availableHeight) => ({
+          centerX: cx, centerY: cy, ...size, maxWidth, maxHeight, rotation: rotation + tilt, shadow, exporting
+        });
+        const drawSelectedPhone = (cx, cy, desiredHeight, rotation, maxWidth = availableWidth, maxHeight = availableHeight) => (
+          drawAssetMockup(context, artwork, mockupState.phoneModel in PHONE_MODELS ? mockupState.phoneModel : 'iphone17pro', assetOptions(cx, cy, { desiredHeight }, rotation, maxWidth, maxHeight))
+        );
+        const drawChrome = (cx, cy, desiredWidth, rotation, maxWidth = availableWidth, maxHeight = availableHeight) => (
+          drawAssetMockup(context, artwork, 'chrome', assetOptions(cx, cy, { desiredWidth }, rotation, maxWidth, maxHeight))
+        );
 
         if (shell === 'phone') {
-          const bezel = Math.max(7, frameWidth * phoneModel.bezel);
-          const deviceRadius = frameWidth * phoneModel.corner;
-          const screenRadius = frameWidth * phoneModel.screenCorner;
-          const frameGradient = context.createLinearGradient(x, y, x + frameWidth, y + frameHeight);
-          frameGradient.addColorStop(0, phoneModel.frame[0]); frameGradient.addColorStop(.35, '#11131a'); frameGradient.addColorStop(1, phoneModel.frame[1]);
-          roundedRectPath(context, x, y, frameWidth, frameHeight, deviceRadius);
-          context.fillStyle = frameGradient; context.fill();
-          context.shadowColor = 'transparent';
-          const screenX = x + bezel, screenY = y + bezel;
-          const screenW = frameWidth - bezel * 2, screenH = frameHeight - bezel * 2;
-          drawImageCover(context, artwork, screenX, screenY, screenW, screenH, screenRadius);
-
-          context.fillStyle = 'rgba(3,4,8,.96)';
-          if (phoneModel.cutout === 'island') {
-            const islandW = frameWidth * .265, islandH = Math.max(7, frameHeight * .0175);
-            roundedRectPath(context, -islandW / 2, screenY + bezel * .7, islandW, islandH, islandH / 2); context.fill();
-            context.fillStyle = 'rgba(86,102,126,.52)'; context.beginPath(); context.arc(islandW * .34, screenY + bezel * .7 + islandH / 2, islandH * .22, 0, Math.PI * 2); context.fill();
-          } else {
-            const holeRadius = Math.max(3, frameWidth * .014);
-            context.beginPath(); context.arc(0, screenY + bezel * 1.05 + holeRadius, holeRadius, 0, Math.PI * 2); context.fill();
-            context.strokeStyle = 'rgba(255,255,255,.2)'; context.lineWidth = Math.max(.7, frameWidth / 700); context.stroke();
-          }
-
-          context.fillStyle = phoneModel.frame[1];
-          const buttonW = Math.max(2, frameWidth * .009);
-          const drawSideButton = (side, top, length) => {
-            const bx = side === 'left' ? x - buttonW * .45 : x + frameWidth - buttonW * .55;
-            roundedRectPath(context, bx, y + frameHeight * top, buttonW, frameHeight * length, buttonW / 2); context.fill();
-          };
-          if (phoneModel.buttonSide === 'both') { drawSideButton('left', .18, .055); drawSideButton('left', .28, .1); }
-          drawSideButton('right', phoneModel.cutout === 'island' ? .25 : .2, .12);
-
-          context.strokeStyle = 'rgba(255,255,255,.22)'; context.lineWidth = Math.max(1, frameWidth / 430);
-          roundedRectPath(context, x, y, frameWidth, frameHeight, deviceRadius); context.stroke();
-          context.strokeStyle = 'rgba(0,0,0,.45)'; context.lineWidth = Math.max(1, frameWidth / 520);
-          roundedRectPath(context, screenX, screenY, screenW, screenH, screenRadius); context.stroke();
+          drawSelectedPhone(centerX, centerY, availableHeight * scale, 0);
+        } else if (shell === 'asset-macbook') {
+          drawAssetMockup(context, artwork, 'macbook', assetOptions(centerX, centerY, { desiredWidth: availableWidth * scale }, 0, availableWidth, availableHeight));
+        } else if (shell === 'asset-ipad') {
+          drawAssetMockup(context, artwork, 'ipad', assetOptions(centerX, centerY, { desiredWidth: availableWidth * scale * .88 }, 0, availableWidth, availableHeight));
+        } else if (shell === 'asset-imac') {
+          drawAssetMockup(context, artwork, 'imac', assetOptions(centerX, centerY, { desiredHeight: availableHeight * scale }, 0, availableWidth, availableHeight));
+        } else if (shell === 'browser-stack') {
+          const layerWidth = availableWidth * scale * .78;
+          drawChrome(centerX + availableWidth * .11, centerY - availableHeight * .09, layerWidth, 4, availableWidth * .82, availableHeight * .73);
+          drawChrome(centerX - availableWidth * .1, centerY + availableHeight * .1, layerWidth, -3, availableWidth * .82, availableHeight * .73);
+        } else if (shell === 'responsive-duo') {
+          drawChrome(centerX - availableWidth * .1, centerY - availableHeight * .02, availableWidth * scale * .78, -2, availableWidth * .8, availableHeight * .78);
+          drawSelectedPhone(centerX + availableWidth * .29, centerY + availableHeight * .07, availableHeight * scale * .82, 5, availableWidth * .26, availableHeight * .82);
+        } else if (shell === 'phone-duo') {
+          const phoneHeight = availableHeight * scale * .92;
+          drawSelectedPhone(centerX - availableWidth * .11, centerY + availableHeight * .025, phoneHeight, -6, availableWidth * .34, availableHeight);
+          drawSelectedPhone(centerX + availableWidth * .11, centerY - availableHeight * .025, phoneHeight, 6, availableWidth * .34, availableHeight);
+        } else if (shell === 'phone-fan') {
+          const phoneHeight = availableHeight * scale * .82;
+          drawSelectedPhone(centerX - availableWidth * .18, centerY + availableHeight * .075, phoneHeight, -10, availableWidth * .28, availableHeight);
+          drawSelectedPhone(centerX + availableWidth * .18, centerY + availableHeight * .075, phoneHeight, 10, availableWidth * .28, availableHeight);
+          drawSelectedPhone(centerX, centerY - availableHeight * .025, phoneHeight * 1.06, 0, availableWidth * .3, availableHeight);
+        } else if (shell === 'browser') {
+          drawChrome(centerX, centerY, availableWidth * scale, 0, availableWidth, availableHeight * scale);
         } else {
-          const darkShell = shell === 'desktop';
-          roundedRectPath(context, x, y, frameWidth, frameHeight, radius);
-          context.fillStyle = darkShell ? '#121626' : '#f8fafc'; context.fill();
-          context.shadowColor = 'transparent';
-          if (chromeHeight) {
-            context.save(); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.clip();
-            context.fillStyle = darkShell ? '#151a2c' : '#f7f8fb'; context.fillRect(x, y, frameWidth, chromeHeight);
-            context.fillStyle = darkShell ? 'rgba(255,255,255,.25)' : 'rgba(15,23,42,.22)';
-            const dotR = Math.max(3, chromeHeight * .095);
-            [0, 1, 2].forEach(index => { context.beginPath(); context.arc(x + chromeHeight * .52 + index * dotR * 2.7, y + chromeHeight / 2, dotR, 0, Math.PI * 2); context.fill(); });
-            if (shell === 'browser') {
-              const addressX = x + chromeHeight * 2.2, addressW = frameWidth - chromeHeight * 2.75;
-              roundedRectPath(context, addressX, y + chromeHeight * .25, addressW, chromeHeight * .5, chromeHeight * .25);
-              context.fillStyle = '#e9edf4'; context.fill();
-            } else {
-              context.fillStyle = 'rgba(255,255,255,.65)'; context.font = `600 ${Math.max(10, chromeHeight * .3)}px "Segoe UI Variable", sans-serif`; context.textAlign = 'center'; context.textBaseline = 'middle';
-              context.fillText('PConline 封面工作台', 0, y + chromeHeight / 2);
-            }
-            context.restore();
-          }
-          const imageY = y + chromeHeight;
-          const imageH = frameHeight - chromeHeight;
-          context.save(); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.clip();
-          context.drawImage(artwork, x, imageY, frameWidth, imageH); context.restore();
-          context.strokeStyle = darkShell ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.12)'; context.lineWidth = Math.max(1, width / 1600);
-          roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.stroke();
+          const type = shell === 'desktop' ? 'desktop' : 'card';
+          drawWindowMockup(context, artwork, windowOptions(centerX, centerY, availableWidth * scale, type, 0, availableHeight * scale));
         }
-        context.restore();
         return out;
       }
 
       function syncMockupControls() {
+        if (!PHONE_MODELS[mockupState.phoneModel]) mockupState.phoneModel = 'iphone17pro';
         document.querySelectorAll('[data-shell]').forEach(button => button.classList.toggle('active', button.dataset.shell === mockupState.shell));
-        $('phoneModelPicker').hidden = mockupState.shell !== 'phone';
+        $('phoneModelPicker').hidden = !['phone', 'responsive-duo', 'phone-duo', 'phone-fan'].includes(mockupState.shell);
         document.querySelectorAll('[data-phone-model]').forEach(button => {
           const active = button.dataset.phoneModel === mockupState.phoneModel;
           button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
@@ -3409,9 +3532,11 @@
         mockupFrame = requestAnimationFrame(() => { if ($('mockupDialog').open) drawMockupCanvas(false); });
       }
 
-      function openMockupStudio() {
+      async function openMockupStudio() {
         if (!currentItem()) return;
         syncMockupControls(); $('mockupDialog').showModal(); scheduleMockupRender();
+        try { await waitForMockupAssets(); scheduleMockupRender(); }
+        catch (error) { showToast(error.message, true); }
       }
 
       $('mockupBtn').addEventListener('click', openMockupStudio);
@@ -3429,15 +3554,19 @@
       Object.entries(mockupRanges).forEach(([id, key]) => $(id).addEventListener('input', event => { mockupState[key] = Number(event.target.value); syncMockupControls(); scheduleMockupRender(); }));
       $('resetMockup').addEventListener('click', () => { mockupState = defaultMockupState(); syncMockupControls(); scheduleMockupRender(); persistSettings(); showToast('带壳样式已重置'); });
       $('downloadMockup').addEventListener('click', () => withBusy('正在生成高清带壳图…', async () => {
+        await waitForMockupAssets();
         const out = drawMockupCanvas(true);
         const blob = await new Promise((resolve, reject) => out.toBlob(value => value ? resolve(value) : reject(new Error('带壳图生成失败')), 'image/png'));
-        const shellName = mockupState.shell === 'phone' ? (PHONE_MODELS[mockupState.phoneModel] || PHONE_MODELS.iphone17).name : mockupState.shell;
+        const usesPhone = ['phone', 'responsive-duo', 'phone-duo', 'phone-fan'].includes(mockupState.shell);
+        const assetShellNames = { 'asset-macbook': MOCKUP_ASSETS.macbook.name, 'asset-ipad': MOCKUP_ASSETS.ipad.name, 'asset-imac': MOCKUP_ASSETS.imac.name };
+        const shellName = usesPhone ? `${mockupState.shell}-${(PHONE_MODELS[mockupState.phoneModel] || PHONE_MODELS.iphone17pro).name}` : (assetShellNames[mockupState.shell] || mockupState.shell);
         triggerDownload(blob, `${safeName(currentItem().name)}-${safeName(shellName)}-${mockupState.ratio.replace(':','x')}.png`);
         showToast(`已导出 ${out.width} × ${out.height} PNG · ${formatBytes(blob.size)}`);
       }));
       $('copyMockup').addEventListener('click', async () => {
         try {
           if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('浏览器不支持图片剪贴板');
+          await waitForMockupAssets();
           const out = drawMockupCanvas(true);
           const blob = await new Promise((resolve, reject) => out.toBlob(value => value ? resolve(value) : reject(new Error('复制失败')), 'image/png'));
           await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
