@@ -940,6 +940,110 @@
       .brand h1 { max-width: 122px; white-space: nowrap; font-size: 14px; }
     }
 
+    /* Presentation studio — turn a finished crop into a share-ready mockup. */
+    .mockup-entry {
+      display: inline-flex; align-items: center; gap: 7px;
+      color: #eef2ff; border-color: rgba(199,210,254,.28);
+      background: rgba(99,102,241,.18);
+    }
+    .mockup-entry svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .mockup-entry:disabled { opacity: .42; cursor: not-allowed; }
+    .mockup-dialog {
+      width: min(1180px, calc(100vw - 32px)); max-width: none; height: min(790px, calc(100dvh - 32px));
+      overflow: hidden; border: 1px solid #344166; background: #0b1020;
+    }
+    .mockup-dialog[open] { display: flex; flex-direction: column; }
+    .mockup-dialog .dialog-head { position: relative; flex: 0 0 auto; padding-right: 72px; border-bottom: 1px solid #293452; }
+    .mockup-dialog .icon-close { position: absolute; z-index: 5; top: 16px; right: 18px; }
+    .mockup-dialog .dialog-head > div { min-width: 0; }
+    .mockup-layout { min-height: 0; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+    .mockup-preview {
+      min-width: 0; min-height: 0; display: grid; place-items: center; padding: 24px;
+      background:
+        linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%),
+        linear-gradient(45deg, rgba(255,255,255,.018) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.018) 75%), #090e1d;
+      background-size: 26px 26px; background-position: 0 0, 13px 13px;
+    }
+    #mockupCanvas {
+      display: block; max-width: 100%; max-height: 100%; width: auto; height: auto;
+      border-radius: 10px; box-shadow: 0 28px 80px rgba(0,0,0,.5); background: #151b34;
+    }
+    .mockup-controls { min-width: 0; min-height: 0; max-width: 100%; overflow: auto; overflow-x: hidden; padding: 16px; border-left: 1px solid #293452; background: #11182b; scrollbar-width: thin; }
+    .mockup-section { padding: 0 0 17px; margin-bottom: 17px; border-bottom: 1px solid #293452; }
+    .mockup-section:last-child {
+      position: sticky; z-index: 2; bottom: -16px; margin: 0 -2px; padding: 12px 2px 16px;
+      border-top: 1px solid #293452; border-bottom: 0; background: linear-gradient(to bottom, rgba(17,24,43,.96), #11182b 22%);
+    }
+    .mockup-section h3 { margin: 0 0 10px; color: #f4f5ff; font-size: 12px; }
+    .mockup-section-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .mockup-section-head h3 { margin: 0; }
+    .mockup-value { color: #a5b4fc; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .mockup-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+    .mockup-choice-grid > *, .mockup-swatches > *, #mockupRatios > * { min-width: 0; }
+    .mockup-choice {
+      min-height: 48px; padding: 8px 9px; border: 1px solid #334166; border-radius: 10px;
+      color: #d8ddf1; background: #18213a; cursor: pointer; text-align: left; transition: .2s var(--ease);
+    }
+    .mockup-choice:hover { background: #232e4e; border-color: #56668f; }
+    .mockup-choice.active { color: #eef2ff; border-color: #818cf8; background: rgba(99,102,241,.22); box-shadow: inset 0 0 0 1px rgba(129,140,248,.15); }
+    .mockup-choice strong { display: block; font-size: 11px; }
+    .mockup-choice span { display: block; margin-top: 3px; color: #8f9abb; font-size: 9px; }
+    .phone-model-picker { margin-top: 12px; padding-top: 12px; border-top: 1px solid #293452; }
+    .phone-model-picker[hidden] { display: none; }
+    .phone-model-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+    .phone-model-head strong { color: #f4f5ff; font-size: 10px; }
+    .phone-model-head span { color: #818dab; font-size: 8px; }
+    .phone-model-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+    .phone-model {
+      min-width: 0; min-height: 64px; display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 8px; align-items: center;
+      padding: 7px; border: 1px solid #334166; border-radius: 10px; color: #d8ddf1; background: #141d33;
+      text-align: left; cursor: pointer; transition: .2s var(--ease);
+    }
+    .phone-model:hover { background: #202a46; border-color: #56668f; }
+    .phone-model.active { color: #eef2ff; border-color: #818cf8; background: rgba(99,102,241,.2); box-shadow: inset 0 0 0 1px rgba(129,140,248,.14); }
+    .phone-model strong { display: block; font-size: 9px; line-height: 1.25; }
+    .phone-model small { display: block; margin-top: 3px; color: #8f9abb; font-size: 8px; line-height: 1.25; }
+    .phone-mini {
+      position: relative; justify-self: center; width: 21px; height: 43px; border: 2px solid var(--device-color, #8891a8);
+      border-radius: var(--device-radius, 6px); background: linear-gradient(155deg,#20245a,#3d55d5 56%,#17b9b1);
+      box-shadow: 0 4px 10px rgba(0,0,0,.32), inset 0 0 0 1px rgba(255,255,255,.1);
+    }
+    .phone-mini::before { content: ""; position: absolute; z-index: 2; left: 50%; top: 2px; transform: translateX(-50%); width: 3px; height: 3px; border-radius: 50%; background: #05060a; }
+    .phone-model[data-phone-model="iphone17"] .phone-mini::before { width: 8px; height: 3px; border-radius: 3px; }
+    .phone-model[data-phone-model="iphone17"] .phone-mini { --device-color:#9199a8; --device-radius:7px; }
+    .phone-model[data-phone-model="s26ultra"] .phone-mini { --device-color:#7770a6; --device-radius:4px; }
+    .phone-model[data-phone-model="x300pro"] .phone-mini { --device-color:#6e94bb; --device-radius:7px; }
+    .phone-model[data-phone-model="findx9spro"] .phone-mini { --device-color:#d47a53; --device-radius:7px; }
+    .phone-model-note { margin: 8px 0 0; color: #74809f; font-size: 8px; line-height: 1.5; }
+    .mockup-swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+    .mockup-swatch {
+      position: relative; aspect-ratio: 1.22; border: 1px solid rgba(255,255,255,.12); border-radius: 9px;
+      cursor: pointer; transition: .2s var(--ease); overflow: hidden;
+    }
+    .mockup-swatch::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 0 rgba(255,255,255,0); transition: .2s var(--ease); }
+    .mockup-swatch.active { transform: translateY(-2px); border-color: #c7d2fe; }
+    .mockup-swatch.active::after { box-shadow: inset 0 0 0 2px rgba(255,255,255,.7); }
+    .mockup-swatch[data-mockup-template="aurora"] { background: linear-gradient(135deg,#4038aa,#3f74f2 52%,#2fd3cf); }
+    .mockup-swatch[data-mockup-template="sunset"] { background: linear-gradient(135deg,#4b1b55,#d8485f 50%,#ffad58); }
+    .mockup-swatch[data-mockup-template="ocean"] { background: linear-gradient(135deg,#051d33,#087c9d 52%,#55e0c2); }
+    .mockup-swatch[data-mockup-template="paper"] { background: linear-gradient(135deg,#e8ebf2,#f9fafc 58%,#cfd5e2); }
+    .mockup-swatch[data-mockup-template="ink"] { background: linear-gradient(135deg,#050711,#15182d 62%,#29264c); }
+    .mockup-range { display: grid; grid-template-columns: 76px minmax(0,1fr) 38px; gap: 8px; align-items: center; margin-top: 9px; }
+    .mockup-range label { color: #9ba5c3; font-size: 10px; }
+    .mockup-range output { color: #dfe3f4; font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; }
+    .mockup-controls input[type="range"] { accent-color: #818cf8; }
+    .mockup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mockup-actions .primary { grid-column: 1 / -1; min-height: 44px; }
+    .mockup-note { margin: 9px 0 0; color: #818dab; font-size: 9px; line-height: 1.55; }
+    @media (max-width: 880px) {
+      .mockup-dialog { inset: 8px; width: auto; max-width: none; height: auto; max-height: none; margin: 0; }
+      .mockup-dialog .dialog-head { padding: 16px; }
+      .mockup-dialog .dialog-head p { max-width: 270px; white-space: normal; }
+      .mockup-layout { width: 100%; overflow: hidden; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(260px, 46%) minmax(0, 1fr); }
+      .mockup-preview { min-width: 0; overflow: hidden; padding: 12px; }
+      .mockup-controls { border-left: 0; border-top: 1px solid #293452; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
     }
@@ -980,6 +1084,7 @@
     <div class="top-actions">
       <span class="privacy-pill"><span class="status-dot" aria-hidden="true"></span> 图片不上传</span>
       <span class="save-state" id="saveState" data-state="idle">尚未保存</span>
+      <button class="ghost-light mockup-entry" id="mockupBtn" type="button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="15" rx="3"/><path d="M3 8h18M7 6h.01M10 6h.01"/></svg>带壳出图</button>
       <button class="ghost-light" id="projectBtn">项目</button>
       <button class="ghost-light" id="auditBtn">规格依据</button>
       <button class="ghost-light mobile-queue" id="queueBtn" aria-expanded="false" aria-controls="queuePanel">素材</button>
@@ -1410,6 +1515,73 @@
     <div class="dialog-body"><div class="version-grid" id="versionGrid"></div></div>
   </dialog>
 
+  <dialog class="mockup-dialog" id="mockupDialog" aria-labelledby="mockupTitle">
+    <div class="dialog-head">
+      <div><p class="eyebrow">Presentation studio</p><h2 id="mockupTitle">带壳截图工作室</h2><p>把当前裁剪结果包装成适合文章、社媒与作品集展示的成片。</p></div>
+      <button class="icon-close" id="closeMockup" aria-label="关闭带壳截图工作室">×</button>
+    </div>
+    <div class="mockup-layout">
+      <div class="mockup-preview"><canvas id="mockupCanvas" aria-label="带壳截图预览"></canvas></div>
+      <div class="mockup-controls">
+        <section class="mockup-section">
+          <h3>设备外壳</h3>
+          <div class="mockup-choice-grid" id="mockupShells">
+            <button class="mockup-choice active" type="button" data-shell="browser"><strong>浏览器窗口</strong><span>适合网页与横幅</span></button>
+            <button class="mockup-choice" type="button" data-shell="desktop"><strong>桌面应用</strong><span>沉浸式深色标题栏</span></button>
+            <button class="mockup-choice" type="button" data-shell="phone"><strong>旗舰手机</strong><span>4 款真实比例样机</span></button>
+            <button class="mockup-choice" type="button" data-shell="card"><strong>极简卡片</strong><span>只保留圆角与阴影</span></button>
+          </div>
+          <div class="phone-model-picker" id="phoneModelPicker" hidden>
+            <div class="phone-model-head"><strong>选择手机型号</strong><span>依据官方正面结构绘制</span></div>
+            <div class="phone-model-grid" role="group" aria-label="手机样机型号">
+              <button class="phone-model active" type="button" data-phone-model="iphone17"><span class="phone-mini" aria-hidden="true"></span><span><strong>iPhone 17</strong><small>动态岛 · 6.3 英寸</small></span></button>
+              <button class="phone-model" type="button" data-phone-model="s26ultra"><span class="phone-mini" aria-hidden="true"></span><span><strong>Galaxy S26 Ultra</strong><small>方正机身 · 居中挖孔</small></span></button>
+              <button class="phone-model" type="button" data-phone-model="x300pro"><span class="phone-mini" aria-hidden="true"></span><span><strong>vivo X300 Pro</strong><small>圆润大 R 角 · 超窄四边</small></span></button>
+              <button class="phone-model" type="button" data-phone-model="findx9spro"><span class="phone-mini" aria-hidden="true"></span><span><strong>OPPO Find X9s Pro</strong><small>6.32 英寸 · 精巧直屏</small></span></button>
+            </div>
+            <p class="phone-model-note">矢量外壳仅还原正面比例、边框与开孔特征，不使用或上传厂商版权图片。</p>
+          </div>
+        </section>
+        <section class="mockup-section">
+          <h3>背景模板</h3>
+          <div class="mockup-swatches" id="mockupTemplates" role="group" aria-label="背景模板">
+            <button class="mockup-swatch active" data-mockup-template="aurora" type="button" aria-label="极光蓝紫"></button>
+            <button class="mockup-swatch" data-mockup-template="sunset" type="button" aria-label="日落暖橙"></button>
+            <button class="mockup-swatch" data-mockup-template="ocean" type="button" aria-label="深海青绿"></button>
+            <button class="mockup-swatch" data-mockup-template="paper" type="button" aria-label="编辑纸张"></button>
+            <button class="mockup-swatch" data-mockup-template="ink" type="button" aria-label="墨黑夜色"></button>
+          </div>
+        </section>
+        <section class="mockup-section">
+          <h3>画布比例</h3>
+          <div class="toggle-row" id="mockupRatios" role="group" aria-label="带壳截图画布比例">
+            <button class="toggle active" type="button" data-ratio="16:9">16:9</button>
+            <button class="toggle" type="button" data-ratio="4:3">4:3</button>
+            <button class="toggle" type="button" data-ratio="3:2">3:2</button>
+            <button class="toggle" type="button" data-ratio="1:1">1:1</button>
+          </div>
+        </section>
+        <section class="mockup-section">
+          <div class="mockup-section-head"><h3>构图微调</h3><span class="mockup-value">实时预览</span></div>
+          <div class="mockup-range"><label for="mockupScale">外壳大小</label><input id="mockupScale" type="range" min="48" max="96" value="82"><output id="mockupScaleValue">82%</output></div>
+          <div class="mockup-range"><label for="mockupPadding">画布留白</label><input id="mockupPadding" type="range" min="3" max="18" value="8"><output id="mockupPaddingValue">8%</output></div>
+          <div class="mockup-range"><label for="mockupRadius">圆角</label><input id="mockupRadius" type="range" min="0" max="32" value="18"><output id="mockupRadiusValue">18</output></div>
+          <div class="mockup-range"><label for="mockupShadow">阴影</label><input id="mockupShadow" type="range" min="0" max="100" value="62"><output id="mockupShadowValue">62</output></div>
+          <div class="mockup-range"><label for="mockupTilt">倾斜</label><input id="mockupTilt" type="range" min="-8" max="8" value="0"><output id="mockupTiltValue">0°</output></div>
+          <div class="mockup-range"><label for="mockupOffsetY">垂直位置</label><input id="mockupOffsetY" type="range" min="-20" max="20" value="0"><output id="mockupOffsetYValue">0%</output></div>
+        </section>
+        <section class="mockup-section">
+          <div class="mockup-actions">
+            <button class="secondary" id="copyMockup" type="button">复制 PNG</button>
+            <button class="secondary" id="resetMockup" type="button">重置样式</button>
+            <button class="primary" id="downloadMockup" type="button">下载高清带壳图</button>
+          </div>
+          <p class="mockup-note">成片由浏览器本地 Canvas 生成。手机外壳会按屏幕比例居中填充当前画面，可能裁掉左右内容。</p>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
@@ -1456,6 +1628,15 @@
       let autosaveTimer = 0;
       let projectDbPromise = null;
       let lastEnhanceEngine = 'Canvas';
+      let mockupFrame = 0;
+      const PHONE_MODELS = {
+        iphone17: { name: 'iPhone 17', ratio: 71.5 / 149.6, corner: .16, screenCorner: .13, bezel: .034, cutout: 'island', frame: ['#aab0bb', '#343840'], buttonSide: 'both' },
+        s26ultra: { name: 'Galaxy S26 Ultra', ratio: 77.3 / 163.6, corner: .075, screenCorner: .055, bezel: .025, cutout: 'hole', frame: ['#77709b', '#302c45'], buttonSide: 'right' },
+        x300pro: { name: 'vivo X300 Pro', ratio: 75.48 / 161.98, corner: .145, screenCorner: .12, bezel: .027, cutout: 'hole', frame: ['#7ea2c4', '#2c435d'], buttonSide: 'right' },
+        findx9spro: { name: 'OPPO Find X9s Pro', ratio: 71.72 / 150.46, corner: .15, screenCorner: .125, bezel: .029, cutout: 'hole', frame: ['#d9916d', '#6e382b'], buttonSide: 'both' }
+      };
+      const defaultMockupState = () => ({ shell: 'browser', phoneModel: 'iphone17', template: 'aurora', ratio: '16:9', scale: 82, padding: 8, radius: 18, shadow: 62, tilt: 0, offsetY: 0 });
+      let mockupState = defaultMockupState();
 
       const saved = (() => {
         try { return JSON.parse(localStorage.getItem('pconline-cropper-settings') || '{}'); }
@@ -1470,6 +1651,7 @@
       if (saved.maxKb) $('maxKb').value = saved.maxKb;
       if (saved.superResEnabled) $('superResEnabled').checked = true;
       if (Number.isFinite(Number(saved.superResStrength))) $('superResStrength').value = saved.superResStrength;
+      if (saved.mockup && typeof saved.mockup === 'object') mockupState = Object.assign(defaultMockupState(), saved.mockup);
 
       function persistSettings() {
         try {
@@ -1481,7 +1663,8 @@
             limit: $('limitEnabled').checked,
             maxKb: $('maxKb').value,
             superResEnabled: $('superResEnabled').checked,
-            superResStrength: $('superResStrength').value
+            superResStrength: $('superResStrength').value,
+            mockup: mockupState
           }));
         } catch {}
       }
@@ -2382,6 +2565,7 @@
         $('preflightBtn').disabled = disabled;
         $('preflightExport').disabled = disabled;
         $('pixelInspectBtn').disabled = disabled || unsafeOutput;
+        $('mockupBtn').disabled = disabled || unsafeOutput;
         document.querySelectorAll('.position-grid button').forEach(button => { button.disabled = cropDisabled; });
         ['rotateLeft', 'rotateRight', 'flipX', 'resetBtn'].forEach(id => { $(id).disabled = cropDisabled; });
         $('zoomRange').disabled = cropDisabled;
@@ -3021,6 +3205,245 @@
       });
       $('pixelInspectBtn').addEventListener('click', openPixelInspector);
       $('closePixel').addEventListener('click', () => $('pixelDialog').close());
+
+      function roundedRectPath(context, x, y, width, height, radius) {
+        const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+        context.beginPath();
+        context.moveTo(x + r, y);
+        context.arcTo(x + width, y, x + width, y + height, r);
+        context.arcTo(x + width, y + height, x, y + height, r);
+        context.arcTo(x, y + height, x, y, r);
+        context.arcTo(x, y, x + width, y, r);
+        context.closePath();
+      }
+
+      function mockupDimensions(exporting = false) {
+        const sizes = exporting
+          ? { '16:9': [2400, 1350], '4:3': [2000, 1500], '3:2': [2400, 1600], '1:1': [1800, 1800] }
+          : { '16:9': [1200, 675], '4:3': [1000, 750], '3:2': [1080, 720], '1:1': [820, 820] };
+        const [width, height] = sizes[mockupState.ratio] || sizes['16:9'];
+        return { width, height };
+      }
+
+      function drawMockupBackground(context, width, height) {
+        const template = mockupState.template;
+        const palettes = {
+          aurora: ['#252166', '#5367e8', '#27c9c7'],
+          sunset: ['#3d163f', '#cf455b', '#ffad58'],
+          ocean: ['#041827', '#087b98', '#4ed9bd'],
+          paper: ['#e5e8ef', '#fafbfd', '#c8cfdd'],
+          ink: ['#050711', '#15182d', '#2a2750']
+        };
+        const colors = palettes[template] || palettes.aurora;
+        const base = context.createLinearGradient(0, 0, width, height);
+        base.addColorStop(0, colors[0]); base.addColorStop(.54, colors[1]); base.addColorStop(1, colors[2]);
+        context.fillStyle = base; context.fillRect(0, 0, width, height);
+
+        const glowA = context.createRadialGradient(width * .18, height * .1, 0, width * .18, height * .1, width * .58);
+        glowA.addColorStop(0, template === 'paper' ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.3)');
+        glowA.addColorStop(1, 'rgba(255,255,255,0)');
+        context.fillStyle = glowA; context.fillRect(0, 0, width, height);
+        const glowB = context.createRadialGradient(width * .88, height * .88, 0, width * .88, height * .88, width * .5);
+        glowB.addColorStop(0, template === 'paper' ? 'rgba(99,102,241,.12)' : 'rgba(15,23,42,.32)');
+        glowB.addColorStop(1, 'rgba(15,23,42,0)');
+        context.fillStyle = glowB; context.fillRect(0, 0, width, height);
+
+        context.save(); context.globalAlpha = template === 'paper' ? .13 : .08; context.strokeStyle = template === 'paper' ? '#667085' : '#ffffff';
+        context.lineWidth = Math.max(1, width / 1800);
+        const gap = Math.max(34, width / 24);
+        for (let x = -height; x < width + height; x += gap) {
+          context.beginPath(); context.moveTo(x, 0); context.lineTo(x + height, height); context.stroke();
+        }
+        context.restore();
+      }
+
+      function drawImageCover(context, image, x, y, width, height, radius = 0) {
+        const sourceRatio = image.width / image.height;
+        const targetRatio = width / height;
+        let sx = 0, sy = 0, sw = image.width, sh = image.height;
+        if (sourceRatio > targetRatio) { sw = image.height * targetRatio; sx = (image.width - sw) / 2; }
+        else { sh = image.width / targetRatio; sy = (image.height - sh) / 2; }
+        context.save(); roundedRectPath(context, x, y, width, height, radius); context.clip();
+        context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+        context.drawImage(image, sx, sy, sw, sh, x, y, width, height); context.restore();
+      }
+
+      function currentArtwork(targetWidth, exporting) {
+        const item = currentItem();
+        const source = document.createElement('canvas');
+        const usefulScale = Math.min(4, Math.max(1, outputScale, targetWidth / Math.max(1, activePreset.w), exporting ? 1.5 : 1));
+        drawTo(source.getContext('2d'), source, item, activePreset, cropFor(item), usefulScale);
+        return source;
+      }
+
+      function drawMockupCanvas(exporting = false) {
+        const item = currentItem(); if (!item) return null;
+        const out = exporting ? document.createElement('canvas') : $('mockupCanvas');
+        const { width, height } = mockupDimensions(exporting);
+        out.width = width; out.height = height;
+        const context = out.getContext('2d');
+        context.imageSmoothingEnabled = true; context.imageSmoothingQuality = 'high';
+        drawMockupBackground(context, width, height);
+
+        const padding = Math.max(width, height) * (mockupState.padding / 100);
+        const availableWidth = width - padding * 2;
+        const availableHeight = height - padding * 2;
+        const scale = mockupState.scale / 100;
+        const shell = mockupState.shell;
+        const phoneModel = PHONE_MODELS[mockupState.phoneModel] || PHONE_MODELS.iphone17;
+        const artworkRatio = activePreset.w / activePreset.h;
+        let frameWidth, frameHeight, chromeHeight = 0;
+        if (shell === 'phone') {
+          frameHeight = availableHeight * scale;
+          frameWidth = frameHeight * phoneModel.ratio;
+          if (frameWidth > availableWidth * scale) { frameWidth = availableWidth * scale; frameHeight = frameWidth / phoneModel.ratio; }
+        } else {
+          chromeHeight = shell === 'browser' ? Math.max(height * .035, 28) : shell === 'desktop' ? Math.max(height * .03, 24) : 0;
+          frameWidth = availableWidth * scale;
+          frameHeight = frameWidth / artworkRatio + chromeHeight;
+          if (frameHeight > availableHeight * scale) {
+            frameHeight = availableHeight * scale;
+            frameWidth = (frameHeight - chromeHeight) * artworkRatio;
+          }
+        }
+
+        const centerX = width / 2;
+        const centerY = height / 2 + height * (mockupState.offsetY / 100);
+        const x = -frameWidth / 2;
+        const y = -frameHeight / 2;
+        const radius = Math.max(0, mockupState.radius) * (exporting ? 2 : 1);
+        const shadow = mockupState.shadow / 100;
+        const artwork = currentArtwork(shell === 'phone' ? frameWidth : frameWidth, exporting);
+
+        context.save(); context.translate(centerX, centerY); context.rotate(mockupState.tilt * Math.PI / 180);
+        context.shadowColor = `rgba(3,6,18,${(.14 + shadow * .5).toFixed(2)})`;
+        context.shadowBlur = (14 + shadow * 70) * (exporting ? 1.5 : 1);
+        context.shadowOffsetY = (8 + shadow * 30) * (exporting ? 1.4 : 1);
+
+        if (shell === 'phone') {
+          const bezel = Math.max(7, frameWidth * phoneModel.bezel);
+          const deviceRadius = frameWidth * phoneModel.corner;
+          const screenRadius = frameWidth * phoneModel.screenCorner;
+          const frameGradient = context.createLinearGradient(x, y, x + frameWidth, y + frameHeight);
+          frameGradient.addColorStop(0, phoneModel.frame[0]); frameGradient.addColorStop(.35, '#11131a'); frameGradient.addColorStop(1, phoneModel.frame[1]);
+          roundedRectPath(context, x, y, frameWidth, frameHeight, deviceRadius);
+          context.fillStyle = frameGradient; context.fill();
+          context.shadowColor = 'transparent';
+          const screenX = x + bezel, screenY = y + bezel;
+          const screenW = frameWidth - bezel * 2, screenH = frameHeight - bezel * 2;
+          drawImageCover(context, artwork, screenX, screenY, screenW, screenH, screenRadius);
+
+          context.fillStyle = 'rgba(3,4,8,.96)';
+          if (phoneModel.cutout === 'island') {
+            const islandW = frameWidth * .265, islandH = Math.max(7, frameHeight * .0175);
+            roundedRectPath(context, -islandW / 2, screenY + bezel * .7, islandW, islandH, islandH / 2); context.fill();
+            context.fillStyle = 'rgba(86,102,126,.52)'; context.beginPath(); context.arc(islandW * .34, screenY + bezel * .7 + islandH / 2, islandH * .22, 0, Math.PI * 2); context.fill();
+          } else {
+            const holeRadius = Math.max(3, frameWidth * .014);
+            context.beginPath(); context.arc(0, screenY + bezel * 1.05 + holeRadius, holeRadius, 0, Math.PI * 2); context.fill();
+            context.strokeStyle = 'rgba(255,255,255,.2)'; context.lineWidth = Math.max(.7, frameWidth / 700); context.stroke();
+          }
+
+          context.fillStyle = phoneModel.frame[1];
+          const buttonW = Math.max(2, frameWidth * .009);
+          const drawSideButton = (side, top, length) => {
+            const bx = side === 'left' ? x - buttonW * .45 : x + frameWidth - buttonW * .55;
+            roundedRectPath(context, bx, y + frameHeight * top, buttonW, frameHeight * length, buttonW / 2); context.fill();
+          };
+          if (phoneModel.buttonSide === 'both') { drawSideButton('left', .18, .055); drawSideButton('left', .28, .1); }
+          drawSideButton('right', phoneModel.cutout === 'island' ? .25 : .2, .12);
+
+          context.strokeStyle = 'rgba(255,255,255,.22)'; context.lineWidth = Math.max(1, frameWidth / 430);
+          roundedRectPath(context, x, y, frameWidth, frameHeight, deviceRadius); context.stroke();
+          context.strokeStyle = 'rgba(0,0,0,.45)'; context.lineWidth = Math.max(1, frameWidth / 520);
+          roundedRectPath(context, screenX, screenY, screenW, screenH, screenRadius); context.stroke();
+        } else {
+          const darkShell = shell === 'desktop';
+          roundedRectPath(context, x, y, frameWidth, frameHeight, radius);
+          context.fillStyle = darkShell ? '#121626' : '#f8fafc'; context.fill();
+          context.shadowColor = 'transparent';
+          if (chromeHeight) {
+            context.save(); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.clip();
+            context.fillStyle = darkShell ? '#151a2c' : '#f7f8fb'; context.fillRect(x, y, frameWidth, chromeHeight);
+            context.fillStyle = darkShell ? 'rgba(255,255,255,.25)' : 'rgba(15,23,42,.22)';
+            const dotR = Math.max(3, chromeHeight * .095);
+            [0, 1, 2].forEach(index => { context.beginPath(); context.arc(x + chromeHeight * .52 + index * dotR * 2.7, y + chromeHeight / 2, dotR, 0, Math.PI * 2); context.fill(); });
+            if (shell === 'browser') {
+              const addressX = x + chromeHeight * 2.2, addressW = frameWidth - chromeHeight * 2.75;
+              roundedRectPath(context, addressX, y + chromeHeight * .25, addressW, chromeHeight * .5, chromeHeight * .25);
+              context.fillStyle = '#e9edf4'; context.fill();
+            } else {
+              context.fillStyle = 'rgba(255,255,255,.65)'; context.font = `600 ${Math.max(10, chromeHeight * .3)}px "Segoe UI Variable", sans-serif`; context.textAlign = 'center'; context.textBaseline = 'middle';
+              context.fillText('PConline 封面工作台', 0, y + chromeHeight / 2);
+            }
+            context.restore();
+          }
+          const imageY = y + chromeHeight;
+          const imageH = frameHeight - chromeHeight;
+          context.save(); roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.clip();
+          context.drawImage(artwork, x, imageY, frameWidth, imageH); context.restore();
+          context.strokeStyle = darkShell ? 'rgba(255,255,255,.18)' : 'rgba(15,23,42,.12)'; context.lineWidth = Math.max(1, width / 1600);
+          roundedRectPath(context, x, y, frameWidth, frameHeight, radius); context.stroke();
+        }
+        context.restore();
+        return out;
+      }
+
+      function syncMockupControls() {
+        document.querySelectorAll('[data-shell]').forEach(button => button.classList.toggle('active', button.dataset.shell === mockupState.shell));
+        $('phoneModelPicker').hidden = mockupState.shell !== 'phone';
+        document.querySelectorAll('[data-phone-model]').forEach(button => {
+          const active = button.dataset.phoneModel === mockupState.phoneModel;
+          button.classList.toggle('active', active); button.setAttribute('aria-pressed', String(active));
+        });
+        document.querySelectorAll('[data-mockup-template]').forEach(button => button.classList.toggle('active', button.dataset.mockupTemplate === mockupState.template));
+        document.querySelectorAll('[data-ratio]').forEach(button => button.classList.toggle('active', button.dataset.ratio === mockupState.ratio));
+        const values = { mockupScale: ['scale', '%'], mockupPadding: ['padding', '%'], mockupRadius: ['radius', ''], mockupShadow: ['shadow', ''], mockupTilt: ['tilt', '°'], mockupOffsetY: ['offsetY', '%'] };
+        Object.entries(values).forEach(([id, [key, suffix]]) => {
+          $(id).value = mockupState[key]; $(`${id}Value`).textContent = `${mockupState[key]}${suffix}`;
+        });
+      }
+
+      function scheduleMockupRender() {
+        cancelAnimationFrame(mockupFrame);
+        mockupFrame = requestAnimationFrame(() => { if ($('mockupDialog').open) drawMockupCanvas(false); });
+      }
+
+      function openMockupStudio() {
+        if (!currentItem()) return;
+        syncMockupControls(); $('mockupDialog').showModal(); scheduleMockupRender();
+      }
+
+      $('mockupBtn').addEventListener('click', openMockupStudio);
+      $('closeMockup').addEventListener('click', () => { $('mockupDialog').close(); persistSettings(); });
+      $('mockupDialog').addEventListener('click', event => {
+        if (event.target !== event.currentTarget) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) event.currentTarget.close();
+      });
+      document.querySelectorAll('[data-shell]').forEach(button => button.addEventListener('click', () => { mockupState.shell = button.dataset.shell; syncMockupControls(); scheduleMockupRender(); persistSettings(); }));
+      document.querySelectorAll('[data-phone-model]').forEach(button => button.addEventListener('click', () => { mockupState.phoneModel = button.dataset.phoneModel; syncMockupControls(); scheduleMockupRender(); persistSettings(); }));
+      document.querySelectorAll('[data-mockup-template]').forEach(button => button.addEventListener('click', () => { mockupState.template = button.dataset.mockupTemplate; syncMockupControls(); scheduleMockupRender(); persistSettings(); }));
+      document.querySelectorAll('[data-ratio]').forEach(button => button.addEventListener('click', () => { mockupState.ratio = button.dataset.ratio; syncMockupControls(); scheduleMockupRender(); persistSettings(); }));
+      const mockupRanges = { mockupScale: 'scale', mockupPadding: 'padding', mockupRadius: 'radius', mockupShadow: 'shadow', mockupTilt: 'tilt', mockupOffsetY: 'offsetY' };
+      Object.entries(mockupRanges).forEach(([id, key]) => $(id).addEventListener('input', event => { mockupState[key] = Number(event.target.value); syncMockupControls(); scheduleMockupRender(); }));
+      $('resetMockup').addEventListener('click', () => { mockupState = defaultMockupState(); syncMockupControls(); scheduleMockupRender(); persistSettings(); showToast('带壳样式已重置'); });
+      $('downloadMockup').addEventListener('click', () => withBusy('正在生成高清带壳图…', async () => {
+        const out = drawMockupCanvas(true);
+        const blob = await new Promise((resolve, reject) => out.toBlob(value => value ? resolve(value) : reject(new Error('带壳图生成失败')), 'image/png'));
+        const shellName = mockupState.shell === 'phone' ? (PHONE_MODELS[mockupState.phoneModel] || PHONE_MODELS.iphone17).name : mockupState.shell;
+        triggerDownload(blob, `${safeName(currentItem().name)}-${safeName(shellName)}-${mockupState.ratio.replace(':','x')}.png`);
+        showToast(`已导出 ${out.width} × ${out.height} PNG · ${formatBytes(blob.size)}`);
+      }));
+      $('copyMockup').addEventListener('click', async () => {
+        try {
+          if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('浏览器不支持图片剪贴板');
+          const out = drawMockupCanvas(true);
+          const blob = await new Promise((resolve, reject) => out.toBlob(value => value ? resolve(value) : reject(new Error('复制失败')), 'image/png'));
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          showToast('带壳图已复制，可直接粘贴');
+        } catch (error) { showToast(error?.message || '复制失败，请改用下载', true); }
+      });
 
       function extensionForMime(mime) {
         return mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
